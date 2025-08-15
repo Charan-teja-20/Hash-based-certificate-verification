@@ -1,499 +1,433 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Certificate Registry DApp — Pro (Blockchain)</title>
+<title>Certificate Registry DApp — Connected</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
-<!-- Web3 -->
+<!-- Fonts & libs -->
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
-<!-- QR & PDF helper libs -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
 
 <style>
   :root{
-    --glass: rgba(255,255,255,0.12);
-    --glass-2: rgba(255,255,255,0.18);
-    --accent1: #ff6ec4;
-    --accent2: #7873f5;
-    --accent3: #4ade80;
-    --accent4: #fbbf24;
-    --card-bg: rgba(255,255,255,0.06);
-    --white: #ffffff;
+    --bg-1: #071A2B; --bg-2: #0E2B44;
+    --card: rgba(255,255,255,0.04);
+    --muted: rgba(255,255,255,0.75);
+    --accent-yellow: #ffd24a; --accent-yellow-2: #ffcf3b;
+    --glass: rgba(255,255,255,0.03);
+    --border: rgba(255,255,255,0.06);
+    --success: #4ade80; --danger: #ff6b6b;
   }
-  body{
-    margin:0; font-family: 'Space Grotesk', sans-serif;
-    background: linear-gradient(-45deg, var(--accent1), var(--accent2), var(--accent3), var(--accent4));
-    background-size: 400% 400%; animation: bg 12s ease infinite; color:var(--white);
-    -webkit-font-smoothing:antialiased;
-  }
-  @keyframes bg{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-  header{padding:22px 16px;text-align:center}
-  h1{margin:0;font-size:28px}
-  .top-row{display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap}
-  .btn{border:0;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700}
-  .btn-muted{background:var(--glass);color:var(--white)}
-  .btn-primary{background:linear-gradient(90deg,#ffffff,#ffffff);color:#111;padding:10px 16px;border-radius:14px}
-  .status{margin-top:8px;font-size:13px;opacity:.95}
-  main{max-width:1100px;margin:22px auto;padding:18px}
-  .card{background:var(--card-bg);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 8px 30px rgba(0,0,0,0.2)}
-  .tabs{display:flex;gap:10px;justify-content:center;margin-bottom:14px}
-  .tab{padding:10px 16px;border-radius:12px;background:rgba(255,255,255,0.06);cursor:pointer;font-weight:700}
-  .tab.active{background:var(--white);color:#111}
-  .row{display:flex;gap:12px;flex-wrap:wrap}
-  .col{flex:1;min-width:240px}
-  label{display:block;font-size:13px;margin-bottom:6px;opacity:.9}
-  input[type="text"], input[type="date"], input[type="file"]{width:100%;padding:10px;border-radius:10px;border:0}
-  .qr-box{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  canvas.qr{background:#fff;border-radius:10px;padding:8px}
-  .list{margin-top:12px;max-height:300px;overflow:auto}
-  .list .item{background:rgba(255,255,255,0.06);padding:8px;border-radius:8px;margin-bottom:8px}
-  .mini{font-size:12px;opacity:.9}
-  footer{text-align:center;margin-top:18px;font-size:13px;opacity:.9}
-  #pdfPreview{width:100%;height:260px;border-radius:8px;border:0;background:#fff}
-  .small{font-size:12px}
-  .flex-between{display:flex;justify-content:space-between;align-items:center}
+  body{ margin:0; font-family:'Space Grotesk',system-ui,Segoe UI,Roboto,sans-serif;
+    background: linear-gradient(180deg,var(--bg-1),var(--bg-2));
+    color:var(--muted); padding:20px; -webkit-font-smoothing:antialiased;}
+  header{text-align:center;margin-bottom:16px}
+  h1{margin:0;color:#fff;font-family:'Fredoka One',cursive;font-size:34px}
+  .subtitle{color:rgba(255,255,255,0.8);margin-top:6px;font-size:14px}
+  .top-controls{display:flex;gap:12px;justify-content:center;align-items:center;margin-top:14px}
+  .btn{border:0;cursor:pointer;border-radius:12px;padding:10px 16px;font-weight:700}
+  .btn-yellow{background:linear-gradient(180deg,var(--accent-yellow),var(--accent-yellow-2));color:#12202a}
+  .btn-pill{background:#ffffff;color:#0b2740;padding:8px 12px;border-radius:20px}
+  .status{margin-top:10px;color:#ffd;font-weight:600}
+  main{max-width:1100px;margin:18px auto}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:14px;padding:18px;border:1px solid var(--border);box-shadow:0 20px 50px rgba(2,10,20,0.35)}
+  .tabs{display:flex;gap:8px;padding:8px;border-radius:12px;margin-bottom:12px}
+  .tab{flex:1;text-align:center;padding:14px;border-radius:12px;cursor:pointer;background:var(--glass);color:#cfe6ff;font-weight:700}
+  .tab.active{background:rgba(255,255,255,0.06);color:#fff}
+  .grid{display:grid;grid-template-columns:1fr 420px;gap:14px;align-items:start}
+  .field{background:var(--card);padding:12px;border-radius:10px;border:1px solid var(--border);color:var(--muted);margin-bottom:10px}
+  label{display:block;font-size:13px;margin-bottom:8px;color:rgba(255,255,255,0.9)}
+  input[type="text"], input[type="date"], input[type="file"]{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#fff}
+  iframe#pdfPreview{width:100%;height:300px;border-radius:10px;border:0;background:#fff;display:none}
+  .qr-area{display:flex;gap:12px;align-items:center;flex-direction:column}
+  .qr-badge{padding:12px;background:#0b1b2b;border-radius:12px;border:1px solid rgba(255,255,255,0.035);box-shadow:0 10px 20px rgba(0,0,0,0.45)}
+  canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
+  .controls{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .controls .btn{font-size:14px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.06);color:#fff}
+  .issued-list{margin-top:12px;max-height:260px;overflow:auto;border-radius:8px;padding:10px;background:rgba(255,255,255,0.02)}
+  .issued-item{padding:8px;border-radius:8px;margin-bottom:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02)}
+  .mini{font-size:12px;color:rgba(255,255,255,0.75)}
+  #reader{width:100%;max-width:420px;margin-top:12px;border-radius:8px;overflow:hidden;background:#07121a}
+  .flex{display:flex;gap:8px;align-items:center}
+  .right{margin-left:auto}
+  footer{text-align:center;margin-top:14px;color:rgba(255,255,255,0.6);font-size:13px}
+  @media (max-width:960px){ .grid{grid-template-columns:1fr} iframe#pdfPreview{height:220px} }
 </style>
 </head>
 <body>
+
 <header>
-  <h1>Certificate Registry DApp — Pro (Blockchain)</h1>
-  <div class="top-row">
-    <button id="connectBtn" class="btn btn-muted">🔗 Connect Wallet</button>
-    <button id="networkInfo" class="btn btn-muted small">Network: —</button>
-    <button id="themeBtn" class="btn btn-muted small" style="display:none">Theme</button>
+  <h1>Certificate Registry DApp — Pro</h1>
+  <div class="subtitle">Issue • Verify • Revoke • Scan • Share — all-in-one</div>
+
+  <div class="top-controls">
+    <button id="connectButton" class="btn btn-yellow">🔗 Connect Wallet</button>
+    <button id="themeToggle" class="btn btn-pill">🌗 Theme</button>
   </div>
-  <div id="status" class="status">Status: Wallet not connected</div>
+
+  <div id="walletStatus" class="status">🧭 Wallet not connected</div>
 </header>
 
 <main>
   <div class="card">
-    <div class="tabs">
+    <div class="tabs" role="tablist">
       <div class="tab active" data-tab="issue">Issue</div>
       <div class="tab" data-tab="verify">Verify</div>
       <div class="tab" data-tab="revoke">Revoke</div>
     </div>
 
-    <!-- ISSUE -->
-    <div id="panel-issue" class="panel">
-      <div class="row">
-        <div class="col">
-          <label>Student Name</label>
-          <input id="studentName" type="text" placeholder="e.g., A. Sharma" />
-          <label>Course / Program</label>
-          <input id="courseName" type="text" placeholder="e.g., Blockchain 101" />
-          <label>Institution</label>
-          <input id="institution" type="text" placeholder="e.g., ABC Institute" />
-          <label>Issue Date</label>
-          <input id="issueDate" type="date" />
-        </div>
-
-        <div class="col">
-          <label>Upload Certificate (PDF) — preview & hash</label>
-          <input id="fileInput" type="file" accept="application/pdf" />
-          <iframe id="pdfPreview" src="" style="display:none"></iframe>
-          <div style="margin-top:8px" class="flex-between">
-            <button id="genHash" class="btn btn-primary">📄 Generate Hash</button>
-            <button id="issueBtn" class="btn btn-primary">✅ Issue On-Chain</button>
+    <div class="grid">
+      <!-- LEFT: forms -->
+      <div>
+        <!-- ISSUE -->
+        <div id="panel-issue" class="panel">
+          <div class="field">
+            <label>Upload Certificate (PDF) — preview & hash</label>
+            <input id="fileInput" type="file" accept="application/pdf" />
+            <iframe id="pdfPreview" src=""></iframe>
+            <div style="margin-top:10px" class="flex">
+              <button id="generateHash" class="btn">📄 Generate Hash</button>
+              <button id="issueCert" class="btn" style="background:var(--accent-yellow);color:#072;font-weight:800">✅ Issue On-Chain</button>
+              <div class="right mini" id="issueStatus"></div>
+            </div>
           </div>
-          <div style="margin-top:10px">
+
+          <div class="field" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+            <div><label>Student Name</label><input id="studentName" type="text" placeholder="e.g., A. Sharma" /></div>
+            <div><label>Course / Program</label><input id="courseName" type="text" placeholder="e.g., Blockchain Fundamentals" /></div>
+            <div><label>Institution</label><input id="institution" type="text" placeholder="e.g., ABC Institute" /></div>
+            <div><label>Grade (0-100)</label><input id="grade" type="text" placeholder="e.g., 85" /></div>
+            <div><label>Issue Date</label><input id="issueDate" type="date" /></div>
+          </div>
+
+          <div class="field">
             <label>Certificate Hash (0x...)</label>
             <input id="hashInput" type="text" placeholder="0x..." />
+            <div class="controls">
+              <button id="copyLink" class="btn">📋 Copy Verify Link</button>
+              <button id="downloadQR" class="btn">⬇️ Download QR</button>
+              <button id="shareQR" class="btn">📤 Share QR</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <strong style="color:#fff">📝 Issued (local)</strong>
+            <div id="issuedList" class="issued-list mini"></div>
           </div>
         </div>
 
-      </div>
-
-      <div style="margin-top:14px" class="qr-box">
-        <div class="qr-badge card" style="padding:12px">
-          <canvas id="qrCanvas" class="qr" width="220" height="220"></canvas>
+        <!-- VERIFY -->
+        <div id="panel-verify" class="panel" style="display:none">
+          <div class="field">
+            <label>Enter or Scan Certificate Hash</label>
+            <input id="verifyHash" type="text" placeholder="0x..." />
+            <div style="margin-top:10px" class="flex">
+              <button id="verifyBtn" class="btn">🔍 Verify On-Chain</button>
+              <button id="startScan" class="btn">📷 Start Scan</button>
+              <button id="stopScan" class="btn" disabled>🛑 Stop</button>
+              <div class="right mini" id="verifyStatus"></div>
+            </div>
+            <div id="reader"></div>
+            <div id="verifyResult" class="mini" style="margin-top:10px"></div>
+          </div>
         </div>
-        <div style="flex:1">
-          <div class="row">
-            <div style="flex:1">
-              <button id="copyLink" class="btn btn-muted">📋 Copy Verify Link</button>
-            </div>
-            <div style="flex:1">
-              <button id="downloadQR" class="btn btn-muted">⬇️ Download QR</button>
-            </div>
-            <div style="flex:1">
-              <button id="shareQR" class="btn btn-muted">📤 Share QR</button>
+
+        <!-- REVOKE -->
+        <div id="panel-revoke" class="panel" style="display:none">
+          <div class="field">
+            <label>Certificate Hash to Revoke</label>
+            <input id="revokeHash" type="text" placeholder="0x..." />
+            <div style="margin-top:10px" class="flex">
+              <button id="revokeBtn" class="btn" style="background:var(--danger);color:#fff">❌ Revoke On-Chain</button>
+              <div class="right mini" id="revokeStatus"></div>
             </div>
           </div>
-          <div id="issueFeedback" class="mini" style="margin-top:10px"></div>
         </div>
       </div>
 
-      <div class="list" id="issuedList"></div>
-    </div>
+      <!-- RIGHT: QR + info -->
+      <div>
+        <div class="qr-area">
+          <div class="qr-badge">
+            <canvas id="qrCanvas" class="qr" width="220" height="220"></canvas>
+          </div>
 
-    <!-- VERIFY -->
-    <div id="panel-verify" class="panel" style="display:none; margin-top:12px">
-      <label>Enter or Scan Certificate Hash</label>
-      <input id="verifyHash" type="text" placeholder="0x..." />
-      <div style="margin-top:8px" class="row">
-        <button id="verifyBtn" class="btn btn-primary">🔍 Verify On-Chain</button>
-        <button id="startScan" class="btn btn-muted">📷 Start QR Scan</button>
-        <button id="stopScan" class="btn btn-muted" disabled>🛑 Stop Scan</button>
+          <div style="width:100%" class="mini">
+            <div style="display:flex;gap:8px">
+              <div style="flex:1"><strong style="color:#fff">Quick Actions</strong></div>
+              <div style="flex:1;text-align:right" id="networkLabel" class="mini"></div>
+            </div>
+
+            <div style="margin-top:10px" class="mini">
+              Generate a PDF hash, then Issue (writes hash on-chain). Verify reads certificate details from chain. Revoke marks it revoked on-chain.
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div style="margin-top:12px">
-        <div id="reader" style="width:100%;max-width:480px"></div>
-        <div id="verifyResult" class="mini" style="margin-top:8px"></div>
-      </div>
-    </div>
-
-    <!-- REVOKE -->
-    <div id="panel-revoke" class="panel" style="display:none; margin-top:12px">
-      <label>Certificate Hash to Revoke</label>
-      <input id="revokeHash" type="text" placeholder="0x..." />
-      <div style="margin-top:8px">
-        <button id="revokeBtn" class="btn btn-primary">❌ Revoke On-Chain</button>
-        <div id="revokeFeedback" class="mini" style="margin-top:8px"></div>
-      </div>
-    </div>
-
-  </div>
+    </div> <!-- grid -->
+  </div> <!-- card -->
 
   <footer>
-    <div class="mini">Note: Only the certificate hash is recorded on-chain. Metadata stays in your browser localStorage for convenience.</div>
+    <div class="mini">Tip: Save as <code>index.html</code>, open in Chrome, allow camera & wallet. Contract address is embedded.</div>
   </footer>
 </main>
 
 <script>
 /* =========================
-   Configuration (contract)
+   CONTRACT (user-provided)
    ========================= */
-const contractAddress = "0x8df5b74f5aA6DF84870e9A29ED0569008A6a3733"; // update if needed
+const contractAddress = "0x2C75F16E20543741578D8066bbcC78cc9BD9d7d1";
 const abi = [
-  { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "issueCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-  { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "revokeCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-  { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "verifyCertificate", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }
+	{
+		"inputs": [
+			{"internalType":"bytes32[]","name":"certHashes","type":"bytes32[]"},
+			{"internalType":"string[]","name":"recipientNames","type":"string[]"},
+			{"internalType":"string[]","name":"courseTitles","type":"string[]"},
+			{"internalType":"uint8[]","name":"grades","type":"uint8[]"},
+			{"internalType":"string[]","name":"_ipfsCids","type":"string[]"}
+		],
+		"name":"batchIssueCertificates","outputs":[],"stateMutability":"nonpayable","type":"function"
+	},
+	{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
+	{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},
+	{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},
+	{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"certHash","type":"bytes32"},{"indexed":true,"internalType":"address","name":"issuer","type":"address"},{"indexed":false,"internalType":"string","name":"recipientName","type":"string"},{"indexed":false,"internalType":"string","name":"courseTitle","type":"string"},{"indexed":false,"internalType":"string","name":"ipfsCid","type":"string"}],"name":"CertificateIssued","type":"event"},
+	{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"certHash","type":"bytes32"},{"indexed":true,"internalType":"address","name":"issuer","type":"address"}],"name":"CertificateRevoked","type":"event"},
+	{"inputs":[{"internalType":"address","name":"_account","type":"address"}],"name":"grantIssuerRole","outputs":[],"stateMutability":"nonpayable","type":"function"},
+	{"inputs":[{"internalType":"bytes32","name":"certHash","type":"bytes32"},{"internalType":"string","name":"recipientName","type":"string"},{"internalType":"string","name":"courseTitle","type":"string"},{"internalType":"uint8","name":"grade","type":"uint8"},{"internalType":"string","name":"_ipfsCid","type":"string"}],"name":"issueCertificate","outputs":[],"stateMutability":"nonpayable","type":"function"},
+	{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"account","type":"address"}],"name":"IssuerGranted","type":"event"},
+	{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"account","type":"address"}],"name":"IssuerRevoked","type":"event"},
+	{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
+	{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+	{"inputs":[{"internalType":"bytes32","name":"certHash","type":"bytes32"}],"name":"revokeCertificate","outputs":[],"stateMutability":"nonpayable","type":"function"},
+	{"inputs":[{"internalType":"address","name":"_account","type":"address"}],"name":"revokeIssuerRole","outputs":[],"stateMutability":"nonpayable","type":"function"},
+	{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
+	{"inputs":[{"internalType":"bytes32","name":"certHash","type":"bytes32"}],"name":"getCertificateDetails","outputs":[{"components":[{"internalType":"address","name":"issuer","type":"address"},{"internalType":"uint256","name":"issueDate","type":"uint256"},{"internalType":"bool","name":"isValid","type":"bool"},{"internalType":"string","name":"recipientName","type":"string"},{"internalType":"string","name":"courseTitle","type":"string"},{"internalType":"uint8","name":"grade","type":"uint8"},{"internalType":"string","name":"ipfsCid","type":"string"}],"internalType":"struct CertificateRegistryV2.Certificate","name":"","type":"tuple"}],"stateMutability":"view","type":"function"},
+	{"inputs":[{"internalType":"address","name":"_issuer","type":"address"}],"name":"getCertificatesByIssuer","outputs":[{"internalType":"bytes32[]","name":"","type":"bytes32[]"}],"stateMutability":"view","type":"function"},
+	{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isIssuer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+	{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}
 ];
 
 /* =========================
-   State
+   STATE & HELPERS
    ========================= */
 let web3, contract, account;
-const LS_KEY = 'issuedCerts_onchain_v1';
+const LS_KEY = 'certs_v2_onchain';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+function setWalletStatus(text){ $('#walletStatus').innerText = text; }
+function setMini(id, txt){ const el = document.getElementById(id); if(el) el.innerText = txt; }
 
 /* =========================
-   UI helpers
+   THEME
    ========================= */
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
-const setStatus = (t) => { $('#status').innerText = 'Status: ' + t; };
-const setNetwork = (t) => { $('#networkInfo').innerText = 'Network: ' + t; };
+const themeToggle = $('#themeToggle');
+(function initTheme(){ const p = localStorage.getItem('dapp_theme') || 'dark'; if(p === 'light') document.documentElement.classList.add('light'); })();
+themeToggle.addEventListener('click', ()=>{ document.documentElement.classList.toggle('light'); localStorage.setItem('dapp_theme', document.documentElement.classList.contains('light') ? 'light' : 'dark'); });
 
 /* =========================
-   Tabs
+   TABS
    ========================= */
 $$('.tab').forEach(tab => tab.addEventListener('click', () => {
-  $$('.tab').forEach(t => t.classList.remove('active'));
+  $$('.tab').forEach(t=>t.classList.remove('active'));
   tab.classList.add('active');
   const key = tab.dataset.tab;
-  $$('.panel').forEach(p => p.style.display = 'none');
+  $$('.panel').forEach(p=>p.style.display='none');
   document.getElementById('panel-' + key).style.display = 'block';
 }));
 
 /* =========================
-   Wallet connect
+   CONNECT WALLET
    ========================= */
-$('#connectBtn').addEventListener('click', async () => {
-  if (!window.ethereum) { alert('Install MetaMask'); return; }
+$('#connectButton').addEventListener('click', async () => {
+  if(!window.ethereum){ alert('Please install MetaMask'); return; }
   try {
     web3 = new Web3(window.ethereum);
     await window.ethereum.request({ method: 'eth_requestAccounts' });
     const accounts = await web3.eth.getAccounts();
     account = accounts[0];
     contract = new web3.eth.Contract(abi, contractAddress);
-    setStatus('Connected: ' + account);
+    $('#connectButton').innerText = '✅ Connected';
+    setWalletStatus('🟢 Connected: ' + account);
     const netId = await web3.eth.net.getId();
-    setNetwork(netId);
-    $('#connectBtn').innerText = '✅ Connected';
-    // handle account changes
-    window.ethereum.on('accountsChanged', (accs) => {
-      account = accs[0];
-      setStatus('Connected: ' + account);
-    });
-    window.ethereum.on('chainChanged', () => { location.reload(); });
+    $('#networkLabel').innerText = 'Network: ' + netId;
+    window.ethereum.on('accountsChanged', accs => { account = accs[0]; setWalletStatus('🟢 Connected: ' + account); });
+    window.ethereum.on('chainChanged', ()=> location.reload());
     renderIssued();
-  } catch (e) {
-    alert('Wallet connection failed: ' + (e.message || e));
-  }
+  } catch(e){ alert('Wallet connect failed: ' + (e.message || e)); }
 });
 
 /* =========================
-   Compute SHA-256 from file
+   FILE PREVIEW & SHA-256
    ========================= */
-$('#genHash').addEventListener('click', async () => {
+$('#generateHash').addEventListener('click', async () => {
   const file = $('#fileInput').files[0];
-  if (!file) return alert('Please select a PDF file');
+  if(!file) return alert('Please select a PDF file first');
   try {
-    // show preview via objectURL
-    $('#pdfPreview').style.display = 'block';
-    $('#pdfPreview').src = URL.createObjectURL(file);
+    const url = URL.createObjectURL(file);
+    $('#pdfPreview').src = url; $('#pdfPreview').style.display = 'block';
 
-    const arrayBuffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+    const ab = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', ab);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = '0x' + hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
-    $('#hashInput').value = hashHex;
-    drawQRCode(hashHex);
-  } catch (e) {
-    alert('Hash generation failed: ' + e.message);
-  }
+    const hex = '0x' + hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+    $('#hashInput').value = hex;
+    drawQRCode(hex);
+    setMini('issueStatus', 'Hash generated');
+  } catch(e){ alert('Hash generation error: ' + (e.message || e)); }
 });
 
 /* =========================
-   QR draw helper
+   QR DRAW
    ========================= */
-function drawQRCode(text) {
-  QRCode.toCanvas($('#qrCanvas'), text, { width:220, margin:1 }, err => { if (err) console.error(err); });
+function drawQRCode(text){
+  if(!text) return;
+  QRCode.toCanvas($('#qrCanvas'), text, { width:220, margin:1 }, err => { if(err) console.error(err); });
 }
 
-/* =========================
-   Issue on chain
-   ========================= */
-$('#issueBtn').addEventListener('click', async () => {
-  if (!contract || !account) return alert('Please connect your wallet first');
-  const hash = $('#hashInput').value.trim();
-  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return alert('Hash must be SHA-256 (0x + 64 hex chars). Generate it from the PDF.');
-  const meta = {
-    name: $('#studentName').value.trim(),
-    course: $('#courseName').value.trim(),
-    institution: $('#institution').value.trim(),
-    date: $('#issueDate').value || new Date().toISOString().split('T')[0]
-  };
-  try {
-    setStatus('Sending transaction to issue certificate...');
-    const gasEst = await contract.methods.issueCertificate(hash).estimateGas({ from: account });
-    const tx = await contract.methods.issueCertificate(hash).send({ from: account, gas: Math.floor(gasEst * 1.2) });
-    // persist local metadata with tx info
-    persistIssued({ hash, ...meta, ts: Date.now(), txHash: tx.transactionHash });
-    drawQRCode(hash);
-    $('#issueFeedback').innerText = `Issued on-chain (tx: ${tx.transactionHash}). Saved metadata locally.`;
-    setStatus('Transaction confirmed: ' + tx.transactionHash);
-    renderIssued();
-  } catch (e) {
-    console.error(e);
-    alert('Issue failed: ' + (e.message || e));
-    setStatus('Idle');
-  }
+/* mirror hash input */
+$('#hashInput').addEventListener('input', (e) => {
+  const v = e.target.value.trim();
+  if(/^0x[0-9a-fA-F]{64}$/.test(v)){ drawQRCode(v); $('#verifyHash').value = v; $('#revokeHash').value = v; }
 });
 
 /* =========================
-   Verify on chain
+   LOCAL STORAGE: save & render
    ========================= */
-$('#verifyBtn').addEventListener('click', async () => {
-  if (!contract) return alert('Please connect wallet (required to call node).');
-  const hash = $('#verifyHash').value.trim();
-  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return alert('Enter a 0x... 64-hex hash');
-  try {
-    setStatus('Checking on-chain...');
-    const isValid = await contract.methods.verifyCertificate(hash).call();
-    $('#verifyResult').innerText = isValid ? '✅ Certificate is VALID (on-chain)' : '❌ Certificate is NOT valid (on-chain)';
-    setStatus('Idle');
-  } catch (e) {
-    alert('Verify failed: ' + (e.message || e));
-    setStatus('Idle');
-  }
-});
-
-/* =========================
-   Revoke on chain
-   ========================= */
-$('#revokeBtn').addEventListener('click', async () => {
-  if (!contract || !account) return alert('Connect wallet first');
-  const hash = $('#revokeHash').value.trim();
-  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return alert('Enter 0x + 64 hex chars');
-  try {
-    setStatus('Sending revoke transaction...');
-    const gasEst = await contract.methods.revokeCertificate(hash).estimateGas({ from: account });
-    const tx = await contract.methods.revokeCertificate(hash).send({ from: account, gas: Math.floor(gasEst * 1.2) });
-    $('#revokeFeedback').innerText = `Revoked on-chain (tx: ${tx.transactionHash})`;
-    // keep local metadata but mark revoked locally if present
-    markRevokedLocally(hash, tx.transactionHash);
-    renderIssued();
-    setStatus('Idle');
-  } catch (e) {
-    alert('Revoke failed: ' + (e.message || e));
-    setStatus('Idle');
-  }
-});
-
-/* =========================
-   LocalStorage helpers
-   ========================= */
-function getIssued() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
-}
-function persistIssued(entry) {
-  const list = getIssued();
-  list.unshift(entry);
-  localStorage.setItem(LS_KEY, JSON.stringify(list.slice(0, 500)));
-}
-function markRevokedLocally(hash, txHash) {
-  const list = getIssued();
-  const idx = list.findIndex(i => i.hash === hash);
-  if (idx > -1) {
-    list[idx].revoked = true;
-    list[idx].revokeTx = txHash;
-    localStorage.setItem(LS_KEY, JSON.stringify(list));
-  }
-}
-function renderIssued() {
-  const container = $('#issuedList');
-  const list = getIssued();
-  if (!list.length) { container.innerHTML = '<div class="mini">No local issued records yet</div>'; return; }
+function getIssued(){ try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]')}catch{return []} }
+function saveIssued(entry){ const l=getIssued(); l.unshift(entry); localStorage.setItem(LS_KEY, JSON.stringify(l.slice(0,500))); }
+function renderIssued(){
+  const container = $('#issuedList'); const items = getIssued();
+  if(!items.length){ container.innerHTML = '<div class="mini">No local issued records yet</div>'; return; }
   container.innerHTML = '';
-  list.forEach((it, i) => {
-    const div = document.createElement('div');
-    div.className = 'item';
-    const when = new Date(it.ts || Date.now()).toLocaleString();
-    div.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <strong>${it.name || '—'}</strong> <div class="mini">${it.course || '—'} • ${it.institution || '—'}</div>
-        </div>
-        <div class="mini">${when}</div>
-      </div>
-      <div class="mini" style="margin-top:6px;word-break:break-all">${it.hash}</div>
-      <div style="margin-top:8px;display:flex;gap:8px">
-        <button class="btn btn-muted" data-act="copy" data-h="${it.hash}">Copy Link</button>
-        <button class="btn btn-muted" data-act="qr" data-h="${it.hash}">Show QR</button>
-        <button class="btn btn-muted" data-act="verify" data-h="${it.hash}">Verify</button>
-      </div>
-      <div class="mini" style="margin-top:6px">${it.txHash ? 'tx: ' + it.txHash : ''} ${it.revoked ? ' • REVOKED' : ''}</div>
-    `;
+  items.forEach(it=>{
+    const div = document.createElement('div'); div.className='issued-item';
+    div.innerHTML = `<div style="display:flex;justify-content:space-between"><div><strong style="color:#fff">${it.name||'—'}</strong><div class="mini">${it.course||'—'} • ${it.institution||'—'}</div></div><div class="mini">${new Date(it.ts||Date.now()).toLocaleString()}</div></div>
+      <div class="mini" style="margin-top:8px;word-break:break-all">${it.hash}</div>
+      <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" data-act="copy" data-h="${it.hash}">Copy Link</button><button class="btn" data-act="qr" data-h="${it.hash}">Show QR</button><button class="btn" data-act="verify" data-h="${it.hash}">Verify</button></div>
+      <div class="mini" style="margin-top:8px">${it.txHash?('tx:'+it.txHash):''}${it.revoked?(' • REVOKED'):''}</div>`;
     container.appendChild(div);
   });
-
-  // attach actions
-  container.querySelectorAll('button').forEach(b => {
-    b.onclick = (ev) => {
-      const act = ev.currentTarget.getAttribute('data-act');
-      const h = ev.currentTarget.getAttribute('data-h');
-      if (act === 'copy') {
-        navigator.clipboard.writeText(buildVerifyURL(h));
-        alert('Link copied');
-      } else if (act === 'qr') {
-        $('#hashInput').value = h;
-        drawQRCode(h);
-        // switch to issue tab visually
-        $$('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelector('.tab[data-tab="issue"]').classList.add('active');
-        $$('.panel').forEach(p => p.style.display = 'none');
-        document.getElementById('panel-issue').style.display = 'block';
-      } else if (act === 'verify') {
-        $$('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelector('.tab[data-tab="verify"]').classList.add('active');
-        $$('.panel').forEach(p => p.style.display = 'none');
-        document.getElementById('panel-verify').style.display = 'block';
-        $('#verifyHash').value = h;
-        $('#verifyBtn').click();
-      }
-    };
+  container.querySelectorAll('button').forEach(b=>b.onclick = ev=>{
+    const act = ev.currentTarget.dataset.act, h = ev.currentTarget.dataset.h;
+    if(act==='copy'){ navigator.clipboard.writeText(buildVerifyURL(h)); alert('Link copied'); }
+    else if(act==='qr'){ $('#hashInput').value = h; drawQRCode(h); }
+    else if(act==='verify'){ $('#verifyHash').value = h; $$('.tab').forEach(t=>t.classList.remove('active')); document.querySelector('.tab[data-tab=\"verify\"]').classList.add('active'); $$('.panel').forEach(p=>p.style.display='none'); document.getElementById('panel-verify').style.display='block'; $('#verifyBtn').click(); }
   });
 }
 
 /* =========================
-   QR share/copy/download
+   ISSUE ON-CHAIN (issueCertificate)
+   ABI: (bytes32 certHash, string recipientName, string courseTitle, uint8 grade, string _ipfsCid)
+   We'll pass empty string for ipfsCid.
    ========================= */
-function buildVerifyURL(hash) {
-  return location.origin + location.pathname + '?certHash=' + encodeURIComponent(hash);
-}
-$('#copyLink').addEventListener('click', () => {
-  const h = $('#hashInput').value.trim();
-  if (!h) return alert('No hash');
-  navigator.clipboard.writeText(buildVerifyURL(h));
-  alert('Link copied');
+$('#issueCert').addEventListener('click', async () => {
+  if(!contract || !account) return alert('Connect wallet first');
+  const hash = $('#hashInput').value.trim();
+  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)) return alert('Hash must be 0x + 64 hex chars (generate from PDF).');
+  const recipientName = $('#studentName').value.trim() || '—';
+  const courseTitle = $('#courseName').value.trim() || '—';
+  let grade = parseInt($('#grade').value,10); if(Number.isNaN(grade) || grade < 0) grade = 0; if(grade > 255) grade = 255;
+  try {
+    setMini('issueStatus','Sending tx...');
+    const gas = await contract.methods.issueCertificate(hash, recipientName, courseTitle, grade, "").estimateGas({ from: account });
+    const tx = await contract.methods.issueCertificate(hash, recipientName, courseTitle, grade, "").send({ from: account, gas: Math.floor(gas*1.2) });
+    const meta = { hash, name: recipientName, course: courseTitle, institution: $('#institution').value.trim()||'—', grade, ts: Date.now(), txHash: tx.transactionHash };
+    saveIssued(meta); renderIssued(); drawQRCode(hash);
+    setMini('issueStatus','Issued: ' + tx.transactionHash);
+    setWalletStatus('Last tx: ' + tx.transactionHash);
+  } catch(e){ alert('Issue failed: ' + (e.message || e)); setMini('issueStatus','Error'); }
 });
-$('#downloadQR').addEventListener('click', () => {
-  const canvas = $('#qrCanvas');
-  const link = document.createElement('a');
-  link.download = 'certificate_qr.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
+
+/* =========================
+   VERIFY: getCertificateDetails(certHash) -> tuple
+   { issuer, issueDate, isValid, recipientName, courseTitle, grade, ipfsCid }
+   ========================= */
+$('#verifyBtn').addEventListener('click', async () => {
+  if(!contract) return alert('Connect wallet (to call node)');
+  const hash = $('#verifyHash').value.trim();
+  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)) return alert('Enter a 0x + 64 hex hash');
+  try {
+    setMini('verifyStatus','Checking...');
+    const details = await contract.methods.getCertificateDetails(hash).call();
+    // details is a tuple - safe-check fields
+    const issuer = details.issuer || details[0];
+    const issueDate = parseInt(details.issueDate || details[1] || 0, 10);
+    const isValid = (details.isValid !== undefined) ? details.isValid : details[2];
+    const recipientName = details.recipientName || details[3] || '';
+    const courseTitle = details.courseTitle || details[4] || '';
+    const grade = details.grade !== undefined ? details.grade : details[5];
+    const ipfsCid = details.ipfsCid || details[6] || '';
+    // show nicely
+    const validText = isValid ? '✅ VALID' : '❌ NOT VALID';
+    const issueWhen = issueDate ? new Date(issueDate * 1000).toLocaleString() : '—';
+    $('#verifyResult').innerText = `${validText}\nIssuer: ${issuer}\nIssued: ${issueWhen}\nRecipient: ${recipientName}\nCourse: ${courseTitle}\nGrade: ${grade}\nIPFS CID: ${ipfsCid}`;
+    setMini('verifyStatus','Done');
+  } catch(e){ alert('Verify failed: ' + (e.message || e)); setMini('verifyStatus','Error'); }
 });
-$('#shareQR').addEventListener('click', async () => {
-  const canvas = $('#qrCanvas');
-  canvas.toBlob(async blob => {
-    const file = new File([blob], 'certificate_qr.png', { type: 'image/png' });
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Certificate QR' });
-    } else {
-      alert('Sharing not supported on this device');
-    }
-  });
+
+/* =========================
+   REVOKE: revokeCertificate(certHash)
+   ========================= */
+$('#revokeBtn').addEventListener('click', async () => {
+  if(!contract || !account) return alert('Connect wallet first');
+  const hash = $('#revokeHash').value.trim();
+  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)) return alert('Enter 0x + 64 hex chars');
+  try {
+    setMini('revokeStatus','Sending revoke tx...');
+    const gas = await contract.methods.revokeCertificate(hash).estimateGas({ from: account });
+    const tx = await contract.methods.revokeCertificate(hash).send({ from: account, gas: Math.floor(gas*1.2) });
+    // mark locally if present
+    const list = getIssued(); const idx = list.findIndex(i=>i.hash===hash); if(idx>-1){ list[idx].revoked = true; list[idx].revokeTx = tx.transactionHash; localStorage.setItem(LS_KEY, JSON.stringify(list)); }
+    renderIssued();
+    setMini('revokeStatus','Revoked: ' + tx.transactionHash);
+  } catch(e){ alert('Revoke failed: ' + (e.message || e)); setMini('revokeStatus','Error'); }
 });
+
+/* =========================
+   QR share/copy/download helpers
+   ========================= */
+function buildVerifyURL(hash){ return location.origin + location.pathname + '?certHash=' + encodeURIComponent(hash); }
+$('#copyLink').addEventListener('click', ()=>{ const h = $('#hashInput').value.trim(); if(!h) return alert('No hash'); navigator.clipboard.writeText(buildVerifyURL(h)); alert('Link copied'); });
+$('#downloadQR').addEventListener('click', ()=>{ const c = $('#qrCanvas'); const a = document.createElement('a'); a.download='certificate_qr.png'; a.href = c.toDataURL('image/png'); a.click(); });
+$('#shareQR').addEventListener('click', ()=>{ const c = $('#qrCanvas'); c.toBlob(async blob => { const file = new File([blob],'certificate_qr.png',{type:'image/png'}); if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:'Certificate QR'}); } else alert('Sharing not supported'); }); });
 
 /* =========================
    QR scanning (html5-qrcode)
    ========================= */
 let html5QrCode = null;
-$('#startScan').addEventListener('click', async () => {
-  if (html5QrCode) return;
-  const readerId = 'reader';
-  html5QrCode = new Html5Qrcode(readerId);
+$('#startScan').addEventListener('click', async ()=> {
+  if(html5QrCode) return;
+  html5QrCode = new Html5Qrcode("reader");
   try {
-    const devices = await Html5Qrcode.getCameras();
-    const camId = devices && devices.length ? devices[0].id : null;
-    await html5QrCode.start(camId, { fps: 10, qrbox: 250 }, (decoded) => {
+    const cams = await Html5Qrcode.getCameras();
+    const camId = cams && cams.length ? cams[0].id : null;
+    await html5QrCode.start(camId, { fps: 10, qrbox: 250 }, decoded => {
       $('#verifyHash').value = decoded;
-      $('#stopScan').disabled = false;
-      // stop & verify
-      html5QrCode.stop().then(() => { html5QrCode = null; $('#stopScan').disabled = true; }).catch(()=>{});
       $('#verifyBtn').click();
-    }, (err) => {
-      // ignore scan errors
-    });
+      html5QrCode.stop().then(()=>{ html5QrCode = null; $('#stopScan').disabled = true; }).catch(()=>{});
+    }, err => {});
     $('#stopScan').disabled = false;
-  } catch (e) {
-    alert('Camera start failed: ' + (e.message || e));
-  }
+  } catch(e){ alert('Camera start failed: ' + (e.message || e)); html5QrCode = null; $('#stopScan').disabled = true; }
 });
-$('#stopScan').addEventListener('click', async () => {
-  if (!html5QrCode) return;
-  try { await html5QrCode.stop(); html5QrCode = null; $('#stopScan').disabled = true; } catch(e){ console.warn(e); }
-});
+$('#stopScan').addEventListener('click', async ()=>{ if(!html5QrCode) return; try{ await html5QrCode.stop(); html5QrCode = null; $('#stopScan').disabled = true; }catch(e){ console.warn(e); } });
 
 /* =========================
-   Deep-link auto verify
+   Deep link auto verify
    ========================= */
-(function autoFromURL(){
-  const p = new URLSearchParams(location.search);
-  const h = p.get('certHash');
-  if (h) {
-    // switch to verify
-    $$('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelector('.tab[data-tab="verify"]').classList.add('active');
-    $$('.panel').forEach(pn => pn.style.display = 'none');
-    document.getElementById('panel-verify').style.display = 'block';
-    $('#verifyHash').value = h;
-    // if contract loaded, verify; else wait for connect
-    setTimeout(() => { $('#verifyBtn').click(); }, 800);
-  }
+(function autoVerifyFromURL(){
+  const p = new URLSearchParams(location.search); const h = p.get('certHash');
+  if(h){ $$('.tab').forEach(t=>t.classList.remove('active')); document.querySelector('.tab[data-tab=\"verify\"]').classList.add('active'); $$('.panel').forEach(pn=>pn.style.display='none'); document.getElementById('panel-verify').style.display='block'; $('#verifyHash').value = h; setTimeout(()=>{ $('#verifyBtn').click(); }, 700); drawQRCode(h); }
 })();
 
 /* =========================
-   Mirror hash input -> draw QR and fill other fields
-   ========================= */
-$('#hashInput').addEventListener('input', (e) => {
-  const v = e.target.value.trim();
-  if (/^0x[0-9a-fA-F]{64}$/.test(v)) {
-    drawQRCode(v);
-    $('#verifyHash').value = v;
-    $('#revokeHash').value = v;
-  }
-});
-
-/* =========================
-   Init: render local history if any
+   Init local & blank QR
    ========================= */
 renderIssued();
+drawQRCode('Certificate Registry DApp');
 
 </script>
 </body>
