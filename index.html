@@ -1,281 +1,500 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Certificate Registry DApp</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Certificate Registry DApp — Pro (Blockchain)</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+<!-- Web3 -->
 <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+<!-- QR & PDF helper libs -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+
 <style>
-  body {
-    background: linear-gradient(135deg, #00c6ff, #0072ff);
-    font-family: 'Segoe UI', sans-serif;
-    margin: 0; padding: 0;
-    text-align: center;
-    color: white;
+  :root{
+    --glass: rgba(255,255,255,0.12);
+    --glass-2: rgba(255,255,255,0.18);
+    --accent1: #ff6ec4;
+    --accent2: #7873f5;
+    --accent3: #4ade80;
+    --accent4: #fbbf24;
+    --card-bg: rgba(255,255,255,0.06);
+    --white: #ffffff;
   }
-  h1 { margin-top: 20px; font-size: 36px; }
-  #connectButton {
-    background: #ffdf45; color: black; font-weight: bold;
-    padding: 12px 20px; border: none; border-radius: 12px;
-    cursor: pointer; transition: background 0.3s;
+  body{
+    margin:0; font-family: 'Space Grotesk', sans-serif;
+    background: linear-gradient(-45deg, var(--accent1), var(--accent2), var(--accent3), var(--accent4));
+    background-size: 400% 400%; animation: bg 12s ease infinite; color:var(--white);
+    -webkit-font-smoothing:antialiased;
   }
-  #connectButton:hover { background: #ffe769; }
-  #status { margin: 10px 0 20px; font-weight: bold; }
-  .container {
-    background: rgba(255,255,255,0.1);
-    padding: 20px; border-radius: 16px; width: 80%; max-width: 900px;
-    margin: auto; box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-  }
-  input, button {
-    margin: 10px 0; padding: 10px; font-size: 16px; border-radius: 8px;
-    border: none;
-  }
-  button.action {
-    width: 32%; background: #ffdf45; font-weight: bold;
-    cursor: pointer; transition: background 0.3s;
-  }
-  button.action:hover { background: #ffe769; }
-  .card-container {
-    display: flex; flex-wrap: wrap; justify-content: center;
-    gap: 20px; margin-top: 20px;
-  }
-  .card {
-    background: transparent; width: 250px; height: 300px; perspective: 1000px;
-  }
-  .card-inner {
-    position: relative; width: 100%; height: 100%;
-    transition: transform 0.8s; transform-style: preserve-3d;
-  }
-  .card.flipped .card-inner { transform: rotateY(180deg); }
-  .card-front, .card-back {
-    position: absolute; width: 100%; height: 100%; border-radius: 12px;
-    backface-visibility: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-    padding: 15px; background: rgba(255,255,255,0.15);
-  }
-  .card-front {
-    display: flex; flex-direction: column; justify-content: center;
-    color: white;
-  }
-  .card-back {
-    transform: rotateY(180deg); display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-  }
-  .status-valid { color: #0f0; font-weight: bold; }
-  .status-revoked { color: #f33; font-weight: bold; }
-  #eventFeed {
-    background: rgba(255,255,255,0.1); margin-top: 20px;
-    padding: 10px; border-radius: 12px; max-height: 150px; overflow-y: auto;
-    text-align: left;
-  }
-  #qrModal {
-    position: fixed; top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.8); display:none; align-items:center; justify-content:center;
-  }
-  #qrModalContent {
-    background:white; padding:20px; border-radius:12px;
-    color:black;
-  }
+  @keyframes bg{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  header{padding:22px 16px;text-align:center}
+  h1{margin:0;font-size:28px}
+  .top-row{display:flex;gap:12px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .btn{border:0;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700}
+  .btn-muted{background:var(--glass);color:var(--white)}
+  .btn-primary{background:linear-gradient(90deg,#ffffff,#ffffff);color:#111;padding:10px 16px;border-radius:14px}
+  .status{margin-top:8px;font-size:13px;opacity:.95}
+  main{max-width:1100px;margin:22px auto;padding:18px}
+  .card{background:var(--card-bg);border-radius:14px;padding:16px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 8px 30px rgba(0,0,0,0.2)}
+  .tabs{display:flex;gap:10px;justify-content:center;margin-bottom:14px}
+  .tab{padding:10px 16px;border-radius:12px;background:rgba(255,255,255,0.06);cursor:pointer;font-weight:700}
+  .tab.active{background:var(--white);color:#111}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .col{flex:1;min-width:240px}
+  label{display:block;font-size:13px;margin-bottom:6px;opacity:.9}
+  input[type="text"], input[type="date"], input[type="file"]{width:100%;padding:10px;border-radius:10px;border:0}
+  .qr-box{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  canvas.qr{background:#fff;border-radius:10px;padding:8px}
+  .list{margin-top:12px;max-height:300px;overflow:auto}
+  .list .item{background:rgba(255,255,255,0.06);padding:8px;border-radius:8px;margin-bottom:8px}
+  .mini{font-size:12px;opacity:.9}
+  footer{text-align:center;margin-top:18px;font-size:13px;opacity:.9}
+  #pdfPreview{width:100%;height:260px;border-radius:8px;border:0;background:#fff}
+  .small{font-size:12px}
+  .flex-between{display:flex;justify-content:space-between;align-items:center}
 </style>
 </head>
 <body>
-
-<h1>Certificate Registry DApp</h1>
-<button id="connectButton">🔗 Connect Wallet</button>
-<div id="status">🔌 Wallet not connected</div>
-
-<div class="container">
-  <input type="file" id="fileInput" accept=".pdf" />
-  <input type="text" id="hashInput" placeholder="Certificate Hash" style="width:90%" />
-  <div>
-    <button class="action" onclick="issueCert()">✅ Issue</button>
-    <button class="action" onclick="verifyCert()">🔍 Verify</button>
-    <button class="action" onclick="revokeCert()">❌ Revoke</button>
+<header>
+  <h1>Certificate Registry DApp — Pro (Blockchain)</h1>
+  <div class="top-row">
+    <button id="connectBtn" class="btn btn-muted">🔗 Connect Wallet</button>
+    <button id="networkInfo" class="btn btn-muted small">Network: —</button>
+    <button id="themeBtn" class="btn btn-muted small" style="display:none">Theme</button>
   </div>
-  <button onclick="openQRScanner()">📷 Scan QR to Verify</button>
-</div>
+  <div id="status" class="status">Status: Wallet not connected</div>
+</header>
 
-<h2>📜 Certificates</h2>
-<div class="card-container" id="certContainer"></div>
+<main>
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" data-tab="issue">Issue</div>
+      <div class="tab" data-tab="verify">Verify</div>
+      <div class="tab" data-tab="revoke">Revoke</div>
+    </div>
 
-<h2>📢 Event Feed</h2>
-<div id="eventFeed"></div>
+    <!-- ISSUE -->
+    <div id="panel-issue" class="panel">
+      <div class="row">
+        <div class="col">
+          <label>Student Name</label>
+          <input id="studentName" type="text" placeholder="e.g., A. Sharma" />
+          <label>Course / Program</label>
+          <input id="courseName" type="text" placeholder="e.g., Blockchain 101" />
+          <label>Institution</label>
+          <input id="institution" type="text" placeholder="e.g., ABC Institute" />
+          <label>Issue Date</label>
+          <input id="issueDate" type="date" />
+        </div>
 
-<!-- QR Scanner Modal -->
-<div id="qrModal">
-  <div id="qrModalContent">
-    <div id="reader" style="width:300px;"></div>
-    <button onclick="closeQRScanner()">Close</button>
+        <div class="col">
+          <label>Upload Certificate (PDF) — preview & hash</label>
+          <input id="fileInput" type="file" accept="application/pdf" />
+          <iframe id="pdfPreview" src="" style="display:none"></iframe>
+          <div style="margin-top:8px" class="flex-between">
+            <button id="genHash" class="btn btn-primary">📄 Generate Hash</button>
+            <button id="issueBtn" class="btn btn-primary">✅ Issue On-Chain</button>
+          </div>
+          <div style="margin-top:10px">
+            <label>Certificate Hash (0x...)</label>
+            <input id="hashInput" type="text" placeholder="0x..." />
+          </div>
+        </div>
+
+      </div>
+
+      <div style="margin-top:14px" class="qr-box">
+        <div class="qr-badge card" style="padding:12px">
+          <canvas id="qrCanvas" class="qr" width="220" height="220"></canvas>
+        </div>
+        <div style="flex:1">
+          <div class="row">
+            <div style="flex:1">
+              <button id="copyLink" class="btn btn-muted">📋 Copy Verify Link</button>
+            </div>
+            <div style="flex:1">
+              <button id="downloadQR" class="btn btn-muted">⬇️ Download QR</button>
+            </div>
+            <div style="flex:1">
+              <button id="shareQR" class="btn btn-muted">📤 Share QR</button>
+            </div>
+          </div>
+          <div id="issueFeedback" class="mini" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <div class="list" id="issuedList"></div>
+    </div>
+
+    <!-- VERIFY -->
+    <div id="panel-verify" class="panel" style="display:none; margin-top:12px">
+      <label>Enter or Scan Certificate Hash</label>
+      <input id="verifyHash" type="text" placeholder="0x..." />
+      <div style="margin-top:8px" class="row">
+        <button id="verifyBtn" class="btn btn-primary">🔍 Verify On-Chain</button>
+        <button id="startScan" class="btn btn-muted">📷 Start QR Scan</button>
+        <button id="stopScan" class="btn btn-muted" disabled>🛑 Stop Scan</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <div id="reader" style="width:100%;max-width:480px"></div>
+        <div id="verifyResult" class="mini" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- REVOKE -->
+    <div id="panel-revoke" class="panel" style="display:none; margin-top:12px">
+      <label>Certificate Hash to Revoke</label>
+      <input id="revokeHash" type="text" placeholder="0x..." />
+      <div style="margin-top:8px">
+        <button id="revokeBtn" class="btn btn-primary">❌ Revoke On-Chain</button>
+        <div id="revokeFeedback" class="mini" style="margin-top:8px"></div>
+      </div>
+    </div>
+
   </div>
-</div>
+
+  <footer>
+    <div class="mini">Note: Only the certificate hash is recorded on-chain. Metadata stays in your browser localStorage for convenience.</div>
+  </footer>
+</main>
 
 <script>
-let web3, account, contract;
-const contractAddress = "0x8df5b74f5aA6DF84870e9A29ED0569008A6a3733";
+/* =========================
+   Configuration (contract)
+   ========================= */
+const contractAddress = "0x8df5b74f5aA6DF84870e9A29ED0569008A6a3733"; // update if needed
 const abi = [
- { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "issueCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
- { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "revokeCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
- { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "verifyCertificate", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }
+  { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "issueCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "revokeCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+  { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "verifyCertificate", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }
 ];
 
-document.getElementById("connectButton").onclick = connectWallet;
-document.getElementById("fileInput").addEventListener("change", autoHash);
+/* =========================
+   State
+   ========================= */
+let web3, contract, account;
+const LS_KEY = 'issuedCerts_onchain_v1';
 
-async function connectWallet() {
-  if (window.ethereum) {
-    try {
-      web3 = new Web3(window.ethereum);
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const accounts = await web3.eth.getAccounts();
-      account = accounts[0];
-      contract = new web3.eth.Contract(abi, contractAddress);
-      document.getElementById("connectButton").innerText = "✅ Wallet Connected";
-      document.getElementById("status").innerText = `🟢 Connected: ${account}`;
-    } catch (e) {
-      alert("Connection failed: " + e.message);
-    }
-  } else {
-    alert("Please install MetaMask");
-  }
-}
+/* =========================
+   UI helpers
+   ========================= */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const setStatus = (t) => { $('#status').innerText = 'Status: ' + t; };
+const setNetwork = (t) => { $('#networkInfo').innerText = 'Network: ' + t; };
 
-async function autoHash() {
-  const file = document.getElementById("fileInput").files[0];
-  if (!file) return;
-  const arrayBuffer = await file.arrayBuffer();
-  const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = "0x" + hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-  document.getElementById("hashInput").value = hashHex;
-}
+/* =========================
+   Tabs
+   ========================= */
+$$('.tab').forEach(tab => tab.addEventListener('click', () => {
+  $$('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  const key = tab.dataset.tab;
+  $$('.panel').forEach(p => p.style.display = 'none');
+  document.getElementById('panel-' + key).style.display = 'block';
+}));
 
-function addCertCard(cert) {
-  const container = document.getElementById("certContainer");
-  const card = document.createElement("div");
-  card.className = "card";
-  card.onclick = () => card.classList.toggle("flipped");
-
-  const inner = document.createElement("div");
-  inner.className = "card-inner";
-
-  const front = document.createElement("div");
-  front.className = "card-front";
-  front.innerHTML = `
-    <h3>📄 ${cert.name || 'Certificate'}</h3>
-    <p>Issuer: ${cert.issuer.slice(0,6)}...${cert.issuer.slice(-4)}</p>
-    <p>Date: ${new Date(cert.date).toLocaleString()}</p>
-    <p class="${cert.status==='valid'?'status-valid':'status-revoked'}">${cert.status==='valid'?'✅ Valid':'❌ Revoked'}</p>
-  `;
-
-  const back = document.createElement("div");
-  back.className = "card-back";
-  const canvas = document.createElement("canvas");
-  QRCode.toCanvas(canvas, cert.hash);
-  back.appendChild(canvas);
-
-  inner.appendChild(front);
-  inner.appendChild(back);
-  card.appendChild(inner);
-  container.prepend(card);
-}
-
-async function issueCert() {
-  const hash = document.getElementById("hashInput").value;
-  if (!hash) return alert("Please provide a hash");
+/* =========================
+   Wallet connect
+   ========================= */
+$('#connectBtn').addEventListener('click', async () => {
+  if (!window.ethereum) { alert('Install MetaMask'); return; }
   try {
-    await contract.methods.issueCertificate(hash).send({ from: account });
-    const block = await web3.eth.getBlock("latest");
-    const cert = { hash, name: document.getElementById("fileInput").files[0]?.name, issuer: account, date: block.timestamp*1000, status: 'valid' };
-    saveCert(cert);
-    addCertCard(cert);
-    addEventFeed(`✅ Issued: ${hash}`);
-    launchConfetti();
-  } catch (e) {
-    alert("Error issuing: " + e.message);
-  }
-}
-
-async function verifyCert() {
-  const hash = document.getElementById("hashInput").value;
-  if (!hash) return alert("Enter hash");
-  try {
-    const isValid = await contract.methods.verifyCertificate(hash).call();
-    alert(isValid ? "✅ Valid" : "❌ Not valid");
-  } catch (e) {
-    alert("Error verifying: " + e.message);
-  }
-}
-
-async function revokeCert() {
-  const hash = document.getElementById("hashInput").value;
-  if (!hash) return alert("Enter hash");
-  try {
-    await contract.methods.revokeCertificate(hash).send({ from: account });
-    updateCertStatus(hash, 'revoked');
-    addEventFeed(`❌ Revoked: ${hash}`);
-  } catch (e) {
-    alert("Error revoking: " + e.message);
-  }
-}
-
-function saveCert(cert) {
-  let certs = JSON.parse(localStorage.getItem("certificates") || "[]");
-  certs.unshift(cert);
-  localStorage.setItem("certificates", JSON.stringify(certs));
-}
-
-function loadCerts() {
-  const certs = JSON.parse(localStorage.getItem("certificates") || "[]");
-  certs.forEach(addCertCard);
-}
-
-function updateCertStatus(hash, status) {
-  let certs = JSON.parse(localStorage.getItem("certificates") || "[]");
-  certs = certs.map(c => c.hash === hash ? {...c, status} : c);
-  localStorage.setItem("certificates", JSON.stringify(certs));
-  document.getElementById("certContainer").innerHTML = "";
-  certs.forEach(addCertCard);
-}
-
-function addEventFeed(text) {
-  const feed = document.getElementById("eventFeed");
-  const div = document.createElement("div");
-  div.textContent = `${new Date().toLocaleTimeString()} - ${text}`;
-  feed.prepend(div);
-}
-
-function openQRScanner() {
-  document.getElementById("qrModal").style.display = "flex";
-  const html5QrCode = new Html5Qrcode("reader");
-  html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
-    qrCodeMessage => {
-      document.getElementById("hashInput").value = qrCodeMessage;
-      verifyCert();
-      html5QrCode.stop();
-      closeQRScanner();
+    web3 = new Web3(window.ethereum);
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const accounts = await web3.eth.getAccounts();
+    account = accounts[0];
+    contract = new web3.eth.Contract(abi, contractAddress);
+    setStatus('Connected: ' + account);
+    const netId = await web3.eth.net.getId();
+    setNetwork(netId);
+    $('#connectBtn').innerText = '✅ Connected';
+    // handle account changes
+    window.ethereum.on('accountsChanged', (accs) => {
+      account = accs[0];
+      setStatus('Connected: ' + account);
     });
+    window.ethereum.on('chainChanged', () => { location.reload(); });
+    renderIssued();
+  } catch (e) {
+    alert('Wallet connection failed: ' + (e.message || e));
+  }
+});
+
+/* =========================
+   Compute SHA-256 from file
+   ========================= */
+$('#genHash').addEventListener('click', async () => {
+  const file = $('#fileInput').files[0];
+  if (!file) return alert('Please select a PDF file');
+  try {
+    // show preview via objectURL
+    $('#pdfPreview').style.display = 'block';
+    $('#pdfPreview').src = URL.createObjectURL(file);
+
+    const arrayBuffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = '0x' + hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+    $('#hashInput').value = hashHex;
+    drawQRCode(hashHex);
+  } catch (e) {
+    alert('Hash generation failed: ' + e.message);
+  }
+});
+
+/* =========================
+   QR draw helper
+   ========================= */
+function drawQRCode(text) {
+  QRCode.toCanvas($('#qrCanvas'), text, { width:220, margin:1 }, err => { if (err) console.error(err); });
 }
 
-function closeQRScanner() {
-  document.getElementById("qrModal").style.display = "none";
-}
+/* =========================
+   Issue on chain
+   ========================= */
+$('#issueBtn').addEventListener('click', async () => {
+  if (!contract || !account) return alert('Please connect your wallet first');
+  const hash = $('#hashInput').value.trim();
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return alert('Hash must be SHA-256 (0x + 64 hex chars). Generate it from the PDF.');
+  const meta = {
+    name: $('#studentName').value.trim(),
+    course: $('#courseName').value.trim(),
+    institution: $('#institution').value.trim(),
+    date: $('#issueDate').value || new Date().toISOString().split('T')[0]
+  };
+  try {
+    setStatus('Sending transaction to issue certificate...');
+    const gasEst = await contract.methods.issueCertificate(hash).estimateGas({ from: account });
+    const tx = await contract.methods.issueCertificate(hash).send({ from: account, gas: Math.floor(gasEst * 1.2) });
+    // persist local metadata with tx info
+    persistIssued({ hash, ...meta, ts: Date.now(), txHash: tx.transactionHash });
+    drawQRCode(hash);
+    $('#issueFeedback').innerText = `Issued on-chain (tx: ${tx.transactionHash}). Saved metadata locally.`;
+    setStatus('Transaction confirmed: ' + tx.transactionHash);
+    renderIssued();
+  } catch (e) {
+    console.error(e);
+    alert('Issue failed: ' + (e.message || e));
+    setStatus('Idle');
+  }
+});
 
-function launchConfetti() {
-  // quick confetti effect
-  for (let i=0;i<50;i++){
-    const conf = document.createElement("div");
-    conf.style.position="fixed";conf.style.left=Math.random()*100+"%";conf.style.top="-10px";
-    conf.style.width="8px";conf.style.height="8px";conf.style.background=["#ff0","#0f0","#0ff","#f0f","#f00"][Math.floor(Math.random()*5)];
-    conf.style.opacity="0.8";conf.style.borderRadius="50%";
-    document.body.appendChild(conf);
-    let fall=setInterval(()=>{
-      conf.style.top=(parseFloat(conf.style.top)+3)+"px";
-      if(parseFloat(conf.style.top)>window.innerHeight) {clearInterval(fall);conf.remove();}
-    },20);
+/* =========================
+   Verify on chain
+   ========================= */
+$('#verifyBtn').addEventListener('click', async () => {
+  if (!contract) return alert('Please connect wallet (required to call node).');
+  const hash = $('#verifyHash').value.trim();
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return alert('Enter a 0x... 64-hex hash');
+  try {
+    setStatus('Checking on-chain...');
+    const isValid = await contract.methods.verifyCertificate(hash).call();
+    $('#verifyResult').innerText = isValid ? '✅ Certificate is VALID (on-chain)' : '❌ Certificate is NOT valid (on-chain)';
+    setStatus('Idle');
+  } catch (e) {
+    alert('Verify failed: ' + (e.message || e));
+    setStatus('Idle');
+  }
+});
+
+/* =========================
+   Revoke on chain
+   ========================= */
+$('#revokeBtn').addEventListener('click', async () => {
+  if (!contract || !account) return alert('Connect wallet first');
+  const hash = $('#revokeHash').value.trim();
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return alert('Enter 0x + 64 hex chars');
+  try {
+    setStatus('Sending revoke transaction...');
+    const gasEst = await contract.methods.revokeCertificate(hash).estimateGas({ from: account });
+    const tx = await contract.methods.revokeCertificate(hash).send({ from: account, gas: Math.floor(gasEst * 1.2) });
+    $('#revokeFeedback').innerText = `Revoked on-chain (tx: ${tx.transactionHash})`;
+    // keep local metadata but mark revoked locally if present
+    markRevokedLocally(hash, tx.transactionHash);
+    renderIssued();
+    setStatus('Idle');
+  } catch (e) {
+    alert('Revoke failed: ' + (e.message || e));
+    setStatus('Idle');
+  }
+});
+
+/* =========================
+   LocalStorage helpers
+   ========================= */
+function getIssued() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+}
+function persistIssued(entry) {
+  const list = getIssued();
+  list.unshift(entry);
+  localStorage.setItem(LS_KEY, JSON.stringify(list.slice(0, 500)));
+}
+function markRevokedLocally(hash, txHash) {
+  const list = getIssued();
+  const idx = list.findIndex(i => i.hash === hash);
+  if (idx > -1) {
+    list[idx].revoked = true;
+    list[idx].revokeTx = txHash;
+    localStorage.setItem(LS_KEY, JSON.stringify(list));
   }
 }
+function renderIssued() {
+  const container = $('#issuedList');
+  const list = getIssued();
+  if (!list.length) { container.innerHTML = '<div class="mini">No local issued records yet</div>'; return; }
+  container.innerHTML = '';
+  list.forEach((it, i) => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    const when = new Date(it.ts || Date.now()).toLocaleString();
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong>${it.name || '—'}</strong> <div class="mini">${it.course || '—'} • ${it.institution || '—'}</div>
+        </div>
+        <div class="mini">${when}</div>
+      </div>
+      <div class="mini" style="margin-top:6px;word-break:break-all">${it.hash}</div>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn btn-muted" data-act="copy" data-h="${it.hash}">Copy Link</button>
+        <button class="btn btn-muted" data-act="qr" data-h="${it.hash}">Show QR</button>
+        <button class="btn btn-muted" data-act="verify" data-h="${it.hash}">Verify</button>
+      </div>
+      <div class="mini" style="margin-top:6px">${it.txHash ? 'tx: ' + it.txHash : ''} ${it.revoked ? ' • REVOKED' : ''}</div>
+    `;
+    container.appendChild(div);
+  });
 
-window.onload = loadCerts;
+  // attach actions
+  container.querySelectorAll('button').forEach(b => {
+    b.onclick = (ev) => {
+      const act = ev.currentTarget.getAttribute('data-act');
+      const h = ev.currentTarget.getAttribute('data-h');
+      if (act === 'copy') {
+        navigator.clipboard.writeText(buildVerifyURL(h));
+        alert('Link copied');
+      } else if (act === 'qr') {
+        $('#hashInput').value = h;
+        drawQRCode(h);
+        // switch to issue tab visually
+        $$('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.tab[data-tab="issue"]').classList.add('active');
+        $$('.panel').forEach(p => p.style.display = 'none');
+        document.getElementById('panel-issue').style.display = 'block';
+      } else if (act === 'verify') {
+        $$('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.tab[data-tab="verify"]').classList.add('active');
+        $$('.panel').forEach(p => p.style.display = 'none');
+        document.getElementById('panel-verify').style.display = 'block';
+        $('#verifyHash').value = h;
+        $('#verifyBtn').click();
+      }
+    };
+  });
+}
+
+/* =========================
+   QR share/copy/download
+   ========================= */
+function buildVerifyURL(hash) {
+  return location.origin + location.pathname + '?certHash=' + encodeURIComponent(hash);
+}
+$('#copyLink').addEventListener('click', () => {
+  const h = $('#hashInput').value.trim();
+  if (!h) return alert('No hash');
+  navigator.clipboard.writeText(buildVerifyURL(h));
+  alert('Link copied');
+});
+$('#downloadQR').addEventListener('click', () => {
+  const canvas = $('#qrCanvas');
+  const link = document.createElement('a');
+  link.download = 'certificate_qr.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
+$('#shareQR').addEventListener('click', async () => {
+  const canvas = $('#qrCanvas');
+  canvas.toBlob(async blob => {
+    const file = new File([blob], 'certificate_qr.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Certificate QR' });
+    } else {
+      alert('Sharing not supported on this device');
+    }
+  });
+});
+
+/* =========================
+   QR scanning (html5-qrcode)
+   ========================= */
+let html5QrCode = null;
+$('#startScan').addEventListener('click', async () => {
+  if (html5QrCode) return;
+  const readerId = 'reader';
+  html5QrCode = new Html5Qrcode(readerId);
+  try {
+    const devices = await Html5Qrcode.getCameras();
+    const camId = devices && devices.length ? devices[0].id : null;
+    await html5QrCode.start(camId, { fps: 10, qrbox: 250 }, (decoded) => {
+      $('#verifyHash').value = decoded;
+      $('#stopScan').disabled = false;
+      // stop & verify
+      html5QrCode.stop().then(() => { html5QrCode = null; $('#stopScan').disabled = true; }).catch(()=>{});
+      $('#verifyBtn').click();
+    }, (err) => {
+      // ignore scan errors
+    });
+    $('#stopScan').disabled = false;
+  } catch (e) {
+    alert('Camera start failed: ' + (e.message || e));
+  }
+});
+$('#stopScan').addEventListener('click', async () => {
+  if (!html5QrCode) return;
+  try { await html5QrCode.stop(); html5QrCode = null; $('#stopScan').disabled = true; } catch(e){ console.warn(e); }
+});
+
+/* =========================
+   Deep-link auto verify
+   ========================= */
+(function autoFromURL(){
+  const p = new URLSearchParams(location.search);
+  const h = p.get('certHash');
+  if (h) {
+    // switch to verify
+    $$('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.tab[data-tab="verify"]').classList.add('active');
+    $$('.panel').forEach(pn => pn.style.display = 'none');
+    document.getElementById('panel-verify').style.display = 'block';
+    $('#verifyHash').value = h;
+    // if contract loaded, verify; else wait for connect
+    setTimeout(() => { $('#verifyBtn').click(); }, 800);
+  }
+})();
+
+/* =========================
+   Mirror hash input -> draw QR and fill other fields
+   ========================= */
+$('#hashInput').addEventListener('input', (e) => {
+  const v = e.target.value.trim();
+  if (/^0x[0-9a-fA-F]{64}$/.test(v)) {
+    drawQRCode(v);
+    $('#verifyHash').value = v;
+    $('#revokeHash').value = v;
+  }
+});
+
+/* =========================
+   Init: render local history if any
+   ========================= */
+renderIssued();
+
 </script>
 </body>
 </html>
