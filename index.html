@@ -1,417 +1,631 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Advanced Certificate DApp — Ready to Run</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Certificate Registry DApp — Enhanced (MetaMask Fix + Diagnostics)</title>
+  <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#0b0b1a;--glass:rgba(255,255,255,0.04);--accent:#69e0ff;--muted:#b7c3d9;--txt:#eaf4ff}
+    :root {
+      --bg1: #00c6ff; --bg2: #0072ff; --panel: #29b6f6; --accent: #ffdf45; --accent-2:#ffe769; --text:#ffffff; --card:#ffffff;
+      --shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    [data-theme="dark"]{
+      --bg1:#0f172a; --bg2:#111827; --panel:#1f2937; --accent:#f59e0b; --accent-2:#fbbf24; --text:#e5e7eb; --card:#111827;
+    }
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,#0b0b1a,#111133);color:var(--txt);font-family:Inter,system-ui,Roboto;padding:18px}
-    #particles-js{position:fixed;inset:0;z-index:-1}
-    h1{font-size:clamp(24px,3.6vw,40px);margin:6px 0 8px}
-    .container{max-width:1100px;margin:0 auto}
-    .top{display:flex;gap:12px;align-items:center;justify-content:space-between}
-    .controls{display:flex;gap:10px}
-    .btn{padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:#ffffff06;color:var(--txt);cursor:pointer;font-weight:700}
-    .btn:disabled{opacity:.6;cursor:not-allowed}
-    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:14px;padding:18px;margin-top:14px;border:1px solid rgba(255,255,255,0.04)}
-    .tabs{display:flex;gap:8px}
-    .tab{padding:10px;border-radius:10px;background:transparent;color:var(--muted);cursor:pointer}
-    .tab.active{background:rgba(105,224,255,0.08);color:var(--accent)}
-    input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:#0e1431;color:var(--txt);margin-top:8px}
-    .dropzone{border:2px dashed rgba(105,224,255,0.12);padding:14px;border-radius:10px;text-align:center;cursor:pointer}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{padding:8px;border:1px solid rgba(255,255,255,0.04);font-size:14px}
-    #notification{position:fixed;left:50%;transform:translateX(-50%);top:-120px;padding:12px 18px;border-radius:10px;background:#1b1026;border:1px solid rgba(255,255,255,0.06);z-index:9999;font-weight:700}
-    #notification.error{border-color:#ff6e9e;color:#ffd7e5}
-    .mono{font-family:JetBrains Mono,monospace;font-size:13px}
+    html,body{height:100%}
+    body {
+      background: linear-gradient(120deg, var(--bg1), var(--bg2));
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--text); text-align: center; margin: 0; padding: 0 0 60px;
+    }
+    header { padding: 24px 16px 8px; position: sticky; top:0; background: linear-gradient(120deg, var(--bg1), var(--bg2)); z-index:10 }
+    h1 { margin: 0 0 8px; font-size: 36px; letter-spacing: .3px }
+    .sub{opacity:.85;font-size:14px;margin-bottom:10px}
+    .row{display:flex; gap:16px; flex-wrap:wrap; align-items:stretch; justify-content:center}
+    .panel { background: var(--panel); border-radius: 18px; padding: 18px; width: min(1200px, 96%); margin: 14px auto; box-shadow: var(--shadow); text-align:left }
+    .card { background: var(--card); color:#0b1220; border-radius: 16px; padding: 16px; box-shadow: var(--shadow); flex:1; min-width: 280px }
+    .card h3{margin:0 0 10px}
+    .stack{display:flex; flex-direction:column; gap:10px}
+    .btn, button { background: var(--accent); border:none; padding:12px 16px; border-radius:12px; cursor:pointer; font-weight:700 }
+    .btn:hover { background: var(--accent-2) }
+    #connectButton { padding: 12px 16px; border-radius: 12px }
+    #status { margin: 6px 0 12px; font-weight: 700 }
+    input[type="file"], input[type="text"], input[type="password"], textarea, select {
+      padding: 12px; width: 100%; border-radius: 10px; border: none; background: #eef2ff; font-size: 14px
+    }
+    textarea{min-height:100px}
+    .grid{display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px}
+    .qr-wrap{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+    canvas{ background:#fff; padding:10px; border-radius:10px }
+    .list{ max-height:260px; overflow:auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:12px; }
+    .list .item{ padding:8px; border-bottom:1px solid #e5e7eb; word-break:break-all }
+    .tag{display:inline-block; padding:2px 8px; border-radius:999px; background:#eef2ff; font-size:12px; margin-left:6px}
+    .pill{padding:6px 10px; border-radius:999px; background:#0ea5e9; color:#fff; font-size:12px}
+    .muted{opacity:.8}
+    .drop{border:2px dashed #a7f3d0; padding:16px; border-radius:12px; background:#ecfeff; color:#065f46; text-align:center}
     .hidden{display:none}
-    details#diagnostics{margin-top:12px}
+    .right{display:flex; gap:8px; align-items:center}
+    .link{color:#2563eb; text-decoration:underline; cursor:pointer}
+    footer{margin-top:20px; opacity:.8}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace}
+    .ok{color:#065f46}
+    .warn{color:#92400e}
+    .err{color:#991b1b}
+    .small{font-size:12px}
   </style>
 </head>
 <body>
-  <div id="particles-js"></div>
-  <div class="container">
-    <div class="top">
-      <div>
-        <h1>Advanced Certificate DApp</h1>
-        <div class="mono" style="opacity:.9">Issue certificates, pin files to Pinata (IPFS), verify on-chain.</div>
+  <header>
+    <h1>Certificate Registry DApp — Enhanced</h1>
+    <div class="row" style="justify-content:center">
+      <button id="connectButton" class="btn">🔗 Connect Wallet</button>
+      <button id="btnSwitchSepolia" class="btn" title="Switch to Sepolia">🔁 Switch to Sepolia</button>
+      <button id="themeToggle" class="btn" title="Toggle theme">🌓 Theme</button>
+    </div>
+    <div id="status" class="sub">🔌 Wallet not connected</div>
+    <div id="netInfo" class="sub small mono"></div>
+  </header>
+
+  <section class="panel">
+    <div class="grid">
+      <!-- Issue / Upload -->
+      <div class="card stack">
+        <h3>1) Upload PDF & Generate Hash</h3>
+        <div id="dropZone" class="drop">Drag & drop PDF here or use picker</div>
+        <input type="file" id="fileInput" accept="application/pdf" multiple />
+        <div class="row">
+          <button id="btnGenHash" class="btn">📄 Generate Hash</button>
+          <button id="btnGenHashAuto" class="btn">⚡ Generate on Upload</button>
+        </div>
+        <input type="text" id="hashInput" placeholder="Certificate Hash (0x...)" />
+        <div class="right">
+          <button id="copyHash" class="btn">📋 Copy Hash</button>
+          <span id="dupWarn" class="pill hidden">Duplicate?</span>
+        </div>
+        <div class="qr-wrap">
+          <canvas id="qrCanvas" width="200" height="200"></canvas>
+          <div class="stack" style="flex:1">
+            <button id="btnCopyLink" class="btn">🔗 Copy Verify Link</button>
+            <button id="btnDownloadQR" class="btn">⬇️ Download QR</button>
+            <button id="btnShareQR" class="btn">📤 Share QR</button>
+          </div>
+        </div>
+        <div class="stack">
+          <h4 class="muted">PDF Preview</h4>
+          <embed id="pdfPreview" type="application/pdf" style="width:100%; height:240px; border-radius:12px; background:#fff" />
+        </div>
       </div>
-      <div class="controls">
-        <button id="connectButton" class="btn">🔗 Connect Wallet</button>
-        <button id="settingsButton" class="btn">⚙️ Settings</button>
+
+      <!-- Pinata IPFS -->
+      <div class="card stack">
+        <h3>2) Upload to IPFS (Pinata)</h3>
+        <div class="muted">Paste a <strong>Pinata JWT</strong> (temporary) to upload from browser. Do not use production keys client-side.</div>
+        <input type="password" id="pinataJwt" placeholder="Pinata JWT (starts with ey...)" />
+        <button id="btnUploadIPFS" class="btn">📦 Upload Selected PDF to IPFS</button>
+        <input type="text" id="ipfsCid" placeholder="Returned CID" readonly />
+        <div class="muted">Gateway: <span id="gatewayUrl" class="link"></span></div>
+      </div>
+
+      <!-- On-chain actions -->
+      <div class="card stack">
+        <h3>3) On‑Chain Actions</h3>
+        <button id="btnIssue" class="btn">✅ Issue Certificate</button>
+        <button id="btnRevoke" class="btn">❌ Revoke Certificate</button>
+        <button id="btnVerify" class="btn">🔍 Verify Certificate</button>
+        <div id="txStatus" class="muted">No pending transactions.</div>
+        <div id="ensName" class="muted"></div>
+      </div>
+
+      <!-- Scanner / Auto verify -->
+      <div class="card stack">
+        <h3>4) Scan QR to Verify</h3>
+        <div id="qr-reader" style="width:100%"></div>
+        <div id="qr-reader-results" class="muted"></div>
+        <button id="btnStartScan" class="btn">📷 Start Scanner</button>
+        <button id="btnStopScan" class="btn">🛑 Stop Scanner</button>
+        <div class="muted">Open page with <code>?certHash=0x...</code> to auto-verify.</div>
+      </div>
+
+      <!-- Diagnostics -->
+      <div class="card stack">
+        <h3>Connection Diagnostics</h3>
+        <div class="muted small">Use this to troubleshoot MetaMask connection issues.</div>
+        <button id="btnRunChecks" class="btn">🧪 Run Environment Checks</button>
+        <pre id="diag" class="mono" style="white-space:pre-wrap"></pre>
       </div>
     </div>
+  </section>
 
-    <div id="status" class="mono" style="margin-top:10px">🔌 Wallet not connected</div>
-
-    <details id="diagnostics" class="mono"><summary>🧪 Diagnostics (expand)</summary><div id="diag" style="padding-top:8px">No diagnostics yet.</div></details>
-
-    <div class="card">
-      <div class="tabs">
-        <div class="tab active" data-tab="issue">Issue Single</div>
-        <div class="tab" data-tab="batch">Issue Batch</div>
-        <div class="tab" data-tab="verify">Verify</div>
-        <div class="tab" data-tab="history">My History</div>
-        <div id="admin-tab" class="tab hidden" data-tab="admin">Admin Panel</div>
-      </div>
-
-      <div id="pane-issue" class="pane">
-        <h3>Issue a New Certificate</h3>
-        <label class="dropzone" id="dropzone">📄 Drag & drop certificate file here or click to upload
-          <input id="fileInput" type="file" accept=".pdf,.png,.jpg,.jpeg" class="hidden" />
-        </label>
-        <input id="hashInput" readonly placeholder="Hash will be generated from file" />
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
-          <input id="recipientName" placeholder="Recipient's name" />
-          <input id="courseTitle" placeholder="Course / Achievement" />
-        </div>
-        <input id="grade" type="number" min="0" max="100" placeholder="Grade (0-100)" />
-        <div style="display:flex;gap:10px;margin-top:10px">
-          <button id="issueCertBtn" class="btn">✨ Issue Certificate</button>
-          <div class="mono" style="align-self:center;opacity:.9">Stored on IPFS via Pinata; proof written to smart contract</div>
+  <section class="panel">
+    <div class="grid">
+      <div class="card stack">
+        <h3>Issued Hashes (local index)</h3>
+        <div class="list" id="issuedList"></div>
+        <div class="row">
+          <button id="btnExportLocal" class="btn">💾 Export Local Index (JSON)</button>
+          <button id="btnClearLocal" class="btn">🧹 Clear Local Index</button>
         </div>
       </div>
-
-      <div id="pane-batch" class="pane hidden">
-        <h3>Batch Issue</h3>
-        <p class="mono">Upload CSV headers: hash,recipientName,courseTitle,grade,ipfsCid (ipfsCid optional if you're pre-pinning)</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <input id="batchRecipientName" placeholder="Recipient" />
-          <input id="batchCourseTitle" placeholder="Course" />
-          <input id="batchHash" placeholder="Hash" />
-          <input id="batchGrade" type="number" placeholder="Grade" />
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="addToBatchBtn" class="btn">➕ Add</button>
-          <label class="btn" for="csvFileInput">🧾 Upload CSV</label>
-          <input id="csvFileInput" type="file" accept=".csv" class="hidden" />
-        </div>
-        <div id="batch-table" style="margin-top:10px"></div>
-        <div style="margin-top:8px"><button id="issueBatchBtn" class="btn">🚀 Issue Batch</button></div>
+      <div class="card stack">
+        <h3>Bulk Tools</h3>
+        <div class="muted">Batch Issue from CSV of hashes (one 0x hash per line).</div>
+        <textarea id="csvHashes" placeholder="0xabc...\n0xdef...\n..."></textarea>
+        <button id="btnBatchIssue" class="btn">📚 Batch Issue</button>
       </div>
-
-      <div id="pane-verify" class="pane hidden">
-        <h3>Verify</h3>
-        <input id="verifyHashInput" placeholder="Enter certificate hash" />
-        <div style="display:flex;gap:8px;margin-top:8px"><button id="verifyBtn" class="btn">🔍 Verify</button></div>
-        <div id="verificationResult" class="card hidden" style="margin-top:10px"></div>
-        <div id="qrSection" class="hidden" style="margin-top:10px"><canvas id="qrCanvas"></canvas></div>
-      </div>
-
-      <div id="pane-history" class="pane hidden">
-        <h3>My Issued Certificates</h3>
-        <input id="historySearch" placeholder="Search by recipient or course" />
-        <div style="margin-top:8px"><button id="refreshHistoryBtn" class="btn">🔄 Refresh</button></div>
-        <div id="myCertsList" class="card" style="margin-top:8px">No certificates yet</div>
-      </div>
-
-      <div id="pane-admin" class="pane hidden">
-        <h3>Admin</h3>
-        <input id="issuerAddress" placeholder="Address to grant/revoke" />
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="grantRoleBtn" class="btn">Grant Issuer</button>
-          <button id="revokeRoleBtn" class="btn">Revoke Issuer</button>
-        </div>
-      </div>
-
-    </div>
-
-    <div id="settingsModal" class="modal-backdrop" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:#0008;z-index:999">
-      <div style="width:min(560px,92vw);background:#0b0f26;border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.04)">
-        <h3>Pinata Settings</h3>
-        <p class="mono" style="opacity:.85">Paste your Pinata JWT (starts with <code>eyJ</code>). Stored locally in browser for convenience.</p>
-        <input id="pinataJwtInput" placeholder="Pinata JWT (Secret Access Token)" type="password" />
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="testPinataBtn" class="btn">🧪 Test Connection</button>
-          <button id="savePinataBtn" class="btn">💾 Save</button>
-          <button id="clearPinataBtn" class="btn">🗑️ Clear</button>
-          <button id="closeSettingsBtn" class="btn">✖ Close</button>
-        </div>
-        <div id="pinataTestStatus" class="mono" style="margin-top:8px"></div>
+      <div class="card stack">
+        <h3>Self‑Tests</h3>
+        <div class="muted small">Verifies key helper functions locally (no blockchain needed).</div>
+        <button id="btnRunSelfTests" class="btn">✅ Run Self‑Tests</button>
+        <pre id="selftests" class="mono" style="white-space:pre-wrap"></pre>
       </div>
     </div>
+  </section>
 
-    <div id="noProviderModal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:#0008;z-index:999">
-      <div style="width:min(560px,92vw);background:#0b0f26;border-radius:12px;padding:18px;border:1px solid rgba(255,255,255,0.04)">
-        <h3>Wallet Not Detected</h3>
-        <p class="mono">No injected Ethereum provider found. Install MetaMask (desktop) or open this page in the MetaMask mobile app.</p>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <a id="installLink" class="btn" href="https://metamask.io/download/" target="_blank">⬇️ Install MetaMask</a>
-          <a id="openInMM" class="btn" target="_blank">📱 Open in MetaMask</a>
-          <button id="closeNoProviderBtn" class="btn">✖ Close</button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <div id="notification"></div>
+  <footer>
+    <span class="muted">Contract network should match your wallet network. This UI supports duplicate-check, live status, QR scan, IPFS upload (Pinata), PDF preview, and auto-verify.</span>
+  </footer>
 
   <script>
-    // ======================================================================
-    // === 🚀 CONFIGURATION - CRITICAL SETUP STEPS 🚀 ===
-    // ======================================================================
+    // ====== CONFIG ======
+    // Set your deployed address here
+    const contractAddress = "0x8df5b74f5aA6DF84870e9A29ED0569008A6a3733";
+    const abi = [
+      { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "issueCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+      { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "revokeCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+      { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "verifyCertificate", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }
+    ];
 
-    // STEP 1: Your Contract Address is now set.
-    const contractAddress = "0x7594FD469cfA749E365a1304E1C66fbDC668f605";
-
-    // STEP 2: Your Pinata Key - REPLACE THIS WITH YOURS
-    const pinataJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiIyYzg0YjA4My1mZDFlLTRjMzMtYjFlMi0zNGNiNGNmMWMyMTMiLCJlbWFpbCI6ImNoZXJyeS42MzA1N0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiYWI0ZmUwZmM2ZDRjOWE5MWJkOGIiLCJzY29wZWRLZXlTZWNyZXQiOiIzYTcyYzEzYzdjN2QyYTY4MGQzMWQzNzdlMDk5MjVkYTliZjNkYzlhOWU0NDc4M2ZjY2E2ZDdmMDdkNWIyMzA0IiwiZXhwIjoxNzg2Nzc0MjA2fQ.AqW0aDOrQPUoj-89Acl9Kk93Hpc_FVCl8IlRO799lks';
-
-    // STEP 3: Your ABI is now set.
-    const abi = [{"inputs":[{"internalType":"bytes32[]","name":"certHashes","type":"bytes32[]"},{"internalType":"string[]","name":"recipientNames","type":"string[]"},{"internalType":"string[]","name":"courseTitles","type":"string[]"},{"internalType":"uint8[]","name":"grades","type":"uint8[]"},{"internalType":"string[]","name":"_ipfsCids","type":"string[]"}],"name":"batchIssueCertificates","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"certHash","type":"bytes32"},{"indexed":true,"internalType":"address","name":"issuer","type":"address"},{"indexed":false,"internalType":"string","name":"recipientName","type":"string"},{"indexed":false,"internalType":"string","name":"courseTitle","type":"string"},{"indexed":false,"internalType":"string","name":"ipfsCid","type":"string"}],"name":"CertificateIssued","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"certHash","type":"bytes32"},{"indexed":true,"internalType":"address","name":"issuer","type":"address"}],"name":"CertificateRevoked","type":"event"},{"inputs":[{"internalType":"address","name":"_account","type":"address"}],"name":"grantIssuerRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"certHash","type":"bytes32"},{"internalType":"string","name":"recipientName","type":"string"},{"internalType":"string","name":"courseTitle","type":"string"},{"internalType":"uint8","name":"grade","type":"uint8"},{"internalType":"string","name":"_ipfsCid","type":"string"}],"name":"issueCertificate","outputs":[],"stateMutability":"nonpayable","type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"account","type":"address"}],"name":"IssuerGranted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"account","type":"address"}],"name":"IssuerRevoked","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"certHash","type":"bytes32"}],"name":"revokeCertificate","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_account","type":"address"}],"name":"revokeIssuerRole","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes32","name":"certHash","type":"bytes32"}],"name":"getCertificateDetails","outputs":[{"components":[{"internalType":"address","name":"issuer","type":"address"},{"internalType":"uint256","name":"issueDate","type":"uint256"},{"internalType":"bool","name":"isValid","type":"bool"},{"internalType":"string","name":"recipientName","type":"string"},{"internalType":"string","name":"courseTitle","type":"string"},{"internalType":"uint8","name":"grade","type":"uint8"},{"internalType":"string","name":"ipfsCid","type":"string"}],"internalType":"struct CertificateRegistryV2.Certificate","name":"","type":"tuple"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_issuer","type":"address"}],"name":"getCertificatesByIssuer","outputs":[{"internalType":"bytes32[]","name":"","type":"bytes32[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isIssuer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}];
-
-    // ======================================================================
-    // === DAPP LOGIC - NO NEED TO EDIT BELOW THIS LINE ===
-    // ======================================================================
-
-    // ---------- STATE ----------
-    let web3, ethProvider, account, contract, contractOwner;
-    let batchToIssue = [];
-
-    // ---------- HELPERS ----------
-    const $ = s => document.querySelector(s);
-    const $$ = s => Array.from(document.querySelectorAll(s));
-    function notify(msg, isError=false){ const n = $('#notification'); n.textContent = msg; n.className = isError? 'error':''; n.style.top='18px'; clearTimeout(notify._t); notify._t=setTimeout(()=>n.style.top='-220px',4500); console.log('NOTIFY:', msg); }
-    function setBusy(el, busy, idleText){ if(!el) return; if(busy){ el.dataset.prev = el.textContent; el.textContent = '⏳ Processing...'; el.disabled = true; } else { el.disabled = false; el.textContent = idleText || el.dataset.prev || el.textContent; } }
-
-    function safe(fn){
-      return function(...args){
-        try{
-          const res = fn(...args);
-          if(res && typeof res.then === 'function'){
-            res.catch(err => { console.error('Async handler error', err); notify('Error: ' + (err?.message || err), true); });
-          }
-        }catch(e){ console.error('Sync handler error', e); notify('Error: ' + (e?.message || e), true); }
-      };
-    }
-
-    window.addEventListener('error', function(evt){ console.error('Uncaught error', evt.error || evt.message); notify('Uncaught error: ' + (evt.error?.message||evt.message), true); });
-    window.addEventListener('unhandledrejection', function(evt){ console.error('Unhandled promise rejection', evt.reason); notify('Unhandled rejection: ' + (evt.reason?.message||evt.reason), true); });
-
-    // ---------- UI wiring (use safe wrapper) ----------
-    function switchPane(name){ $$('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name)); $$('.pane').forEach(p=>p.classList.add('hidden')); const p = $(`#pane-${name}`); if(p) p.classList.remove('hidden'); }
-    $$('.tab').forEach(t=>t.addEventListener('click', safe(()=> switchPane(t.dataset.tab))));
-
-    const dz = $('#dropzone'), fi = $('#fileInput'); if(dz){ dz.addEventListener('click', ()=> fi.click()); dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.style.opacity='0.9' }); dz.addEventListener('dragleave', ()=> dz.style.opacity='1'); dz.addEventListener('drop', safe(e=>{ e.preventDefault(); dz.style.opacity='1'; const f = e.dataTransfer.files[0]; fi.files = e.dataTransfer.files; onFileSelected(f); })); }
-    if(fi) fi.addEventListener('change', safe(e=> onFileSelected(e.target.files[0])));
-
-    $('#settingsButton')?.addEventListener('click', safe(()=> $('#settingsModal').style.display='flex'));
-    $('#closeSettingsBtn')?.addEventListener('click', safe(()=> $('#settingsModal').style.display='none'));
-    $('#clearPinataBtn')?.addEventListener('click', safe(()=>{ localStorage.removeItem('pinataJwt'); $('#pinataJwtInput').value=''; notify('Cleared Pinata JWT.'); }));
-    $('#savePinataBtn')?.addEventListener('click', safe(()=>{ const v = $('#pinataJwtInput').value.trim(); if(!v){ notify('Paste your Pinata JWT first', true); return; } localStorage.setItem('pinataJwt', v); notify('Saved Pinata JWT locally'); }));
-    $('#testPinataBtn')?.addEventListener('click', safe(async ()=> { await testPinata(); }));
-
-    $('#connectButton')?.addEventListener('click', safe(async ()=> await connectWallet()));
-    $('#closeNoProviderBtn')?.addEventListener('click', safe(()=> $('#noProviderModal').style.display='none'));
-
-    $('#issueCertBtn')?.addEventListener('click', safe(()=> issueCert()));
-    $('#verifyBtn')?.addEventListener('click', safe(()=> verifyCert()));
-    $('#addToBatchBtn')?.addEventListener('click', safe(()=> addToBatch()));
-    $('#csvFileInput')?.addEventListener('change', safe((e)=> handleCSVUpload(e)));
-    $('#issueBatchBtn')?.addEventListener('click', safe(()=> issueBatch()));
-    $('#refreshHistoryBtn')?.addEventListener('click', safe(()=> fetchIssuedCertificates()));
-    $('#historySearch')?.addEventListener('keyup', safe(() => filterHistory()));
-    $('#grantRoleBtn')?.addEventListener('click', safe(() => grantRole()));
-    $('#revokeRoleBtn')?.addEventListener('click', safe(() => revokeRole()));
-
-    // ---------- Pinata helpers (improved error handling) ----------
-    function loadPinataFromStorage(){ const s = localStorage.getItem('pinataJwt'); if(s) $('#pinataJwtInput').value = s; }
-
-    async function testPinata(){ const btn = $('#testPinataBtn'); setBusy(btn, true); try{ const jwt = $('#pinataJwtInput')?.value.trim() || ''; if(!jwt) { $('#pinataTestStatus').textContent = 'Enter JWT first'; notify('Enter JWT first', true); return; } const res = await fetch('https://api.pinata.cloud/data/testAuthentication', { headers: { Authorization: `Bearer ${jwt}` } }); if(!res.ok) throw new Error('Auth failed: ' + res.status); await res.json(); $('#pinataTestStatus').textContent = '✅ Pinata authentication OK'; notify('Pinata authentication OK'); }catch(err){ $('#pinataTestStatus').textContent = '❌ ' + err.message; notify('Pinata auth failed: ' + err.message, true); } finally{ setBusy($('#testPinataBtn'), false, '🧪 Test Connection'); } }
-
-    async function uploadToIPFS(file){
-      const currentPinataJwt = $('#pinataJwtInput')?.value.trim() || pinataJwt;
-      if(!currentPinataJwt){ notify('Pinata JWT is missing. Open Settings and paste your token.', true); return null; }
-      notify('Uploading to Pinata...');
-      const fd = new FormData(); fd.append('file', file);
-      try{
-        const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', { method:'POST', headers:{ Authorization: `Bearer ${currentPinataJwt}` }, body: fd });
-        if(res.status === 401 || res.status === 403){
-          let msg = `Pinata rejected the request (HTTP ${res.status}).`;
-          if(res.status === 403) msg += ' Common causes: invalid/expired JWT, or Allowed Origins restriction in Pinata settings.';
-          const txt = await res.text().catch(()=>null);
-          if(txt) msg += ' ' + txt;
-          notify(msg, true);
-          return null;
-        }
-        if(!res.ok) throw new Error('HTTP ' + res.status);
-        const j = await res.json(); notify('Pinned to IPFS: ' + j.IpfsHash); return j.IpfsHash;
-      }catch(err){ console.error('IPFS Upload Error', err); notify('IPFS Upload Error: ' + (err.message||err), true); return null; }
-    }
-
-    // ---------- File hashing and issue flow ----------
-    async function generateHashFromFile(file){ const ab = await file.arrayBuffer(); const hb = await crypto.subtle.digest('SHA-256', ab); return '0x' + Array.from(new Uint8Array(hb)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
-    
-    async function onFileSelected(file){ 
-        if(!file) return; 
-        const fileInputEl = $('#fileInput');
-        fileInputEl._file = file;
-        $('#dropzone').textContent = `📄 File selected: ${file.name}`;
-        
-        notify('Hashing file...'); 
-        try{ 
-            const h = await generateHashFromFile(file); 
-            $('#hashInput').value = h; 
-            notify('Hash ready'); 
-        } catch(e) { 
-            console.error('Hash error', e); 
-            notify('Hashing failed: '+(e.message||e), true); 
-        } 
-    }
-
-    async function issueCert(){ 
-        if(!contract){ notify('Connect wallet first', true); return; } 
-        const file = $('#fileInput')._file; 
-        if(!file){ notify('Select a file first', true); return; } 
-        
-        const btn = $('#issueCertBtn'); 
-        setBusy(btn, true); 
-        try { 
-            const ipfs = await uploadToIPFS(file); 
-            if(!ipfs){ setBusy(btn,false,'✨ Issue Certificate'); return; } 
-            
-            const hash = $('#hashInput').value.trim(); 
-            const recipient = $('#recipientName').value.trim(); 
-            const course = $('#courseTitle').value.trim(); 
-            const grade = $('#grade').value; 
-            
-            if(!hash||!recipient||!course||grade===''){ notify('Fill all fields', true); setBusy(btn,false,'✨ Issue Certificate'); return; } 
-            
-            await contract.methods.issueCertificate(hash,recipient,course,grade,ipfs).send({ from: account }); 
-            notify('Certificate issued on-chain'); 
-            await fetchIssuedCertificates(); 
-        } catch(err) { 
-            console.error(err); 
-            notify('Transaction failed: ' + (err.message||err), true); 
-        } finally { 
-            setBusy(btn,false,'✨ Issue Certificate'); 
-        } 
-    }
-
-    // ---------- CSV / batch ----------
-    function renderBatchTable(){ const container = $('#batch-table'); if(!container) return; if(batchToIssue.length===0){ container.innerHTML = '<div class="mono">No rows added</div>'; return; } let html = '<table><thead><tr><th>Recipient</th><th>Course</th><th>Hash</th><th>Grade</th><th>IPFS CID</th><th>Action</th></tr></thead><tbody>'; batchToIssue.forEach((r,i)=>{ html += `<tr><td>${r.recipientName}</td><td>${r.courseTitle}</td><td class="mono">${r.hash.substring(0,10)}...</td><td>${r.grade}</td><td class="mono">${(r.ipfsCid||'-').substring(0,10)}...</td><td><button data-i="${i}" class="btn" style="padding:4px 8px;font-size:12px;">X</button></td></tr>` }); html += '</tbody></table>'; container.innerHTML = html; container.querySelectorAll('button[data-i]').forEach(b=>b.addEventListener('click', safe(()=>{ const i=+b.dataset.i; batchToIssue.splice(i,1); renderBatchTable(); })) ); }
-    function addToBatch(){ const rn=$('#batchRecipientName').value.trim(), ct=$('#batchCourseTitle').value.trim(), h=$('#batchHash').value.trim(), g=$('#batchGrade').value; if(!rn||!ct||!h||g===''){ notify('Fill batch fields', true); return; } batchToIssue.push({ recipientName:rn,courseTitle:ct,hash:h,grade:g,ipfsCid:''}); renderBatchTable(); $('#batchRecipientName').value='';$('#batchCourseTitle').value='';$('#batchHash').value='';$('#batchGrade').value=''; }
-    function handleCSVUpload(e){ const f = e.target.files[0]; if(!f) return; Papa.parse(f,{ header:true, skipEmptyLines:true, complete(r){ const fields = r.meta.fields || []; const required=['hash','recipientName','courseTitle','grade']; if(!required.every(k=>fields.includes(k))){ notify('CSV headers must include: ' + required.join(','), true); return; } const rows = r.data.map(x=>({ hash:x.hash, recipientName:x.recipientName, courseTitle:x.courseTitle, grade:x.grade, ipfsCid: x.ipfsCid||'' })); batchToIssue.push(...rows); renderBatchTable(); notify('Loaded CSV: ' + rows.length + ' rows'); }, error(err){ notify('CSV error: '+err.message, true); } }); $('#csvFileInput').value=''; }
-    async function issueBatch(){ if(!contract){ notify('Connect wallet', true); return; } if(batchToIssue.length===0){ notify('Batch empty', true); return; } const missing = batchToIssue.filter(r=>!r.ipfsCid).length; if(missing>0){ notify('Some rows missing ipfsCid. Pre-pin files or include ipfsCid column in CSV.', true); return; } const btn = $('#issueBatchBtn'); setBusy(btn, true); try{ notify('Sending batch...'); await contract.methods.batchIssueCertificates(batchToIssue.map(r=>r.hash), batchToIssue.map(r=>r.recipientName), batchToIssue.map(r=>r.courseTitle), batchToIssue.map(r=>r.grade), batchToIssue.map(r=>r.ipfsCid)).send({ from: account }); notify('Batch issued successfully'); batchToIssue=[]; renderBatchTable(); await fetchIssuedCertificates(); }catch(err){ notify('Batch error: '+err.message,true); } finally { setBusy(btn, false, '🚀 Issue Batch'); } }
-
-    // ---------- Verify / history ----------
-    async function verifyCert(){ if(!contract){ notify('Connect wallet', true); return; } const h=$('#verifyHashInput').value.trim(); if(!h){ notify('Enter hash', true); return; } try{ const cd = await contract.methods.getCertificateDetails(h).call(); const valid = !!cd.isValid; $('#verificationResult').classList.remove('hidden'); $('#verificationResult').innerHTML = `<h4>${valid? '✅ VALID':'❌ REVOKED'}</h4><p><strong>Recipient:</strong> ${cd.recipientName}</p><p><strong>Course:</strong> ${cd.courseTitle}</p><p><strong>Grade:</strong> ${cd.grade}</p><p class="mono"><strong>Issued By:</strong> ${cd.issuer}</p><p><a href="https://ipfs.io/ipfs/${cd.ipfsCid}" target="_blank" class="btn" style="width:auto">View on IPFS</a></p>`; generateQRCode(h); $('#qrSection').classList.remove('hidden'); }catch(err){ $('#verificationResult').classList.remove('hidden'); $('#verificationResult').innerHTML = '<p>Certificate not found on-chain.</p>'; notify('Not found on-chain', true); } }
-    function generateQRCode(text) { const c = document.getElementById("qrCanvas"); QRCode.toCanvas(c, text, { width: 180, margin: 2 }, (err) => { if (err) console.error(err); }); }
-    async function fetchIssuedCertificates(){ if(!contract) return; const list = $('#myCertsList'); if(!list) return; list.innerHTML = '<div class="mono">Loading...</div>'; try{ const arr = await contract.methods.getCertificatesByIssuer(account).call(); if(!arr || arr.length===0){ list.innerHTML='No certificates issued by this account yet.'; return; } list.innerHTML=''; for(const h of arr.slice().reverse()){ const cd = await contract.methods.getCertificateDetails(h).call(); const el = document.createElement('div'); el.className='cert-item'; el.innerHTML = `<div data-recipient="${cd.recipientName}" data-course="${cd.courseTitle}"><strong>${cd.recipientName}</strong> — ${cd.courseTitle}</div><div class="mono" style="opacity:.8">${h}</div>`; list.appendChild(el); } }catch(err){ notify('Could not load history: '+err.message,true); } }
-    function filterHistory() { const searchTerm = $('#historySearch').value.toLowerCase(); $$('#myCertsList .cert-item').forEach(cert => { const text = cert.textContent.toLowerCase(); cert.style.display = text.includes(searchTerm) ? '' : 'none'; }); }
-    
-    // ---------- ADMIN ----------
-    async function grantRole(){ if(!contract){ notify('Connect wallet', true); return; } const addr=$('#issuerAddress').value.trim(); if(!web3.utils.isAddress(addr)){ notify('Invalid address', true); return; } try{ await contract.methods.grantIssuerRole(addr).send({ from: account }); notify('Role granted'); }catch(err){ notify('Grant error: '+err.message,true); } }
-    async function revokeRole(){ if(!contract){ notify('Connect wallet', true); return; } const addr=$('#issuerAddress').value.trim(); if(!web3.utils.isAddress(addr)){ notify('Invalid address', true); return; } try{ await contract.methods.revokeIssuerRole(addr).send({ from: account }); notify('Role revoked'); }catch(err){ notify('Revoke error: '+err.message,true); } }
-
-    // ---------- Provider detection & connect (fixed) ----------
-    function selectProvider(){
-      try{
-        if(window.ethereum){
-          if(Array.isArray(window.ethereum.providers) && window.ethereum.providers.length){
-            const mm = window.ethereum.providers.find(p=>p.isMetaMask);
-            return mm || window.ethereum.providers[0];
-          }
-          return window.ethereum;
-        }
-        if(window.web3 && window.web3.currentProvider) return window.web3.currentProvider;
-        return null;
-      }catch(e){ console.error('selectProvider error', e); return null; }
-    }
-
-    function metamaskDeepLink(){ return `https://metamask.app.link/dapp/${location.host}${location.pathname}`; }
-
-    async function connectWallet(){ const btn = $('#connectButton'); setBusy(btn, true); try{
-      if(contractAddress.includes('YOUR_NEW_SMART') || !Array.isArray(abi) || abi.length<10){ notify('Warning: contract address or ABI not set. Please update the script.', true); }
-
-      const provider = selectProvider(); if(!provider){ $('#noProviderModal').style.display='flex'; $('#openInMM').href = metamaskDeepLink(); notify('No injected wallet detected. Install MetaMask or open in mobile app.', true); return; }
-
-      ethProvider = provider; web3 = new Web3(ethProvider);
-
-      try{
-        let accounts = [];
-        if(typeof ethProvider.request === 'function'){
-          accounts = await ethProvider.request({ method: 'eth_accounts' });
-        }else if(typeof ethProvider.enable === 'function'){
-          accounts = await ethProvider.enable();
-        }
-        if(accounts && accounts.length) account = accounts[0];
-      }catch(e){ console.warn('Silent account retrieval failed', e); }
-
-      if(!account){
-        try{
-          if(typeof ethProvider.request === 'function'){
-            const accs = await ethProvider.request({ method: 'eth_requestAccounts' }); account = accs && accs[0];
-          }else if(typeof ethProvider.enable === 'function'){
-            const accs = await ethProvider.enable(); account = accs && accs[0];
-          } else {
-            throw new Error('Provider does not support request/enable');
-          }
-        }catch(e){
-          if(e && e.code === 4001){ notify('Connection request rejected by user.', true); }
-          else if(e && e.code === -32002){ notify('Connection request already pending. Open your wallet and approve.', true); }
-          else { console.error('connectWallet request error', e); notify('Failed to connect to wallet: ' + (e.message||e), true); }
-          return;
-        }
+    const CHAIN = {
+      sepolia: {
+        chainId: '0xaa36a7', // 11155111
+        chainName: 'Sepolia',
+        rpcUrls: ['https://rpc.sepolia.org'],
+        blockExplorerUrls: ['https://sepolia.etherscan.io']
+      },
+      mainnet: {
+        chainId: '0x1',
+        chainName: 'Ethereum Mainnet',
+        rpcUrls: ['https://cloudflare-eth.com'],
+        blockExplorerUrls: ['https://etherscan.io']
       }
+    };
 
-      if(!account){ notify('No account available after request.', true); return; }
+    // ====== STATE ======
+    let provider, web3, account, contract, ensResolved;
+    let html5Qrcode; // scanner instance
+    let etherscanBase = 'https://sepolia.etherscan.io/tx/';
 
-      if(!(contractAddress.includes('YOUR_NEW_SMART')) && Array.isArray(abi) && abi.length>10){
-        try{ contract = new web3.eth.Contract(abi, contractAddress); }catch(e){ console.warn('Failed to create contract instance', e); }
+    // ====== DOM ======
+    const el = (id)=>document.getElementById(id);
+    const connectButton = el('connectButton');
+    const statusEl = el('status');
+    const netInfo = el('netInfo');
+    const fileInput = el('fileInput');
+    const hashInput = el('hashInput');
+    const pdfPreview = el('pdfPreview');
+    const dupWarn = el('dupWarn');
+
+    // ====== THEME ======
+    const themeToggle = el('themeToggle');
+    (function initTheme(){
+      const saved = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+    })();
+    themeToggle.onclick = ()=>{
+      const cur = document.documentElement.getAttribute('data-theme')||'light';
+      const next = cur==='light'?'dark':'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    };
+
+    // ====== PROVIDER DETECTION (fix for MetaMask connection) ======
+    function getInjectedProvider(){
+      if(!window.ethereum) return null;
+      if(window.ethereum.providers && Array.isArray(window.ethereum.providers)){
+        const mm = window.ethereum.providers.find(p=>p.isMetaMask);
+        if(mm) return mm;
       }
+      return window.ethereum;
+    }
 
-      $('#status').textContent = '🟢 Connected: ' + account.substring(0,12) + '...'; $('#connectButton').textContent = '✅ Wallet Connected';
+    function updateNetworkUI(chainId){
+      const human = chainId ? `${parseInt(chainId,16)} (${chainId})` : 'unknown';
+      netInfo.innerHTML = `Network chainId: <b>${human}</b>`;
+      if(chainId === CHAIN.sepolia.chainId){
+        etherscanBase = CHAIN.sepolia.blockExplorerUrls[0] + '/tx/';
+      } else if(chainId === CHAIN.mainnet.chainId){
+        etherscanBase = CHAIN.mainnet.blockExplorerUrls[0] + '/tx/';
+      }
+    }
 
-      if(ethProvider && typeof ethProvider.on === 'function'){
-        ethProvider.on('accountsChanged', (accs)=>{
-          try{
-            if(!accs || !accs.length){ notify('Account disconnected — reload to reconnect.'); location.reload(); return; }
-            account = accs[0]; $('#status').textContent = '🟢 Connected: ' + account.substring(0,12) + '...';
-            fetchIssuedCertificates().catch(err => { console.error('fetchIssuedCertificates error', err); notify('Error refreshing certificates: '+(err.message||err), true); });
-          }catch(e){ console.error('accountsChanged handler error', e); }
+    async function ensureSepolia(){
+      if(!provider) throw new Error('No provider');
+      const current = await provider.request({ method: 'eth_chainId' });
+      updateNetworkUI(current);
+      if(current === CHAIN.sepolia.chainId) return true;
+      try{
+        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN.sepolia.chainId }] });
+        updateNetworkUI(CHAIN.sepolia.chainId);
+        return true;
+      }catch(switchErr){
+        // If not added, add it
+        if(switchErr && switchErr.code === 4902){
+          await provider.request({ method: 'wallet_addEthereumChain', params: [{
+            chainId: CHAIN.sepolia.chainId,
+            chainName: CHAIN.sepolia.chainName,
+            rpcUrls: CHAIN.sepolia.rpcUrls,
+            blockExplorerUrls: CHAIN.sepolia.blockExplorerUrls
+          }]});
+          return true;
+        }
+        throw switchErr;
+      }
+    }
+
+    // ====== WALLET ======
+    connectButton.onclick = connectWallet;
+    el('btnSwitchSepolia').onclick = async ()=>{
+      try{
+        provider = getInjectedProvider();
+        if(!provider) return alert('No injected wallet detected. Install MetaMask.');
+        await ensureSepolia();
+        alert('Switched to Sepolia');
+      }catch(e){ alert('Could not switch network: ' + e.message); }
+    };
+
+    async function connectWallet(){
+      try{
+        // Pre-flight environment checks
+        if(location.protocol !== 'https:' && location.hostname !== 'localhost'){
+          return alert('MetaMask only injects on HTTPS or localhost. Please serve this page over HTTPS or run on localhost.');
+        }
+        provider = getInjectedProvider();
+        if(!provider){
+          const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+          const link = isMobile ? 'https://metamask.app.link/dapp/' + location.host + location.pathname : 'https://metamask.io/download/';
+          return alert('MetaMask not found. Install it: ' + link);
+        }
+
+        // Request accounts
+        const accounts = await provider.request({ method: 'eth_requestAccounts' }).catch(err=>{
+          if(err && err.code === 4001) throw new Error('User rejected connection request.');
+          throw err;
         });
-        ethProvider.on('chainChanged', ()=>{ notify('Network changed — reloading'); setTimeout(()=>location.reload(), 600); });
+        account = accounts[0];
+
+        // Ensure network
+        await ensureSepolia();
+
+        // Init web3 + contract
+        web3 = new Web3(provider);
+        if(!/^0x[a-fA-F0-9]{40}$/.test(contractAddress)){
+          throw new Error('Invalid contract address configured.');
+        }
+        contract = new web3.eth.Contract(abi, contractAddress);
+
+        // UI
+        connectButton.innerText = '✅ Wallet Connected';
+        statusEl.innerText = `🟢 Connected: ${account}`;
+        resolveENS(account).catch(()=>{});
+
+        // Events
+        provider.on?.('accountsChanged', (accs)=>{
+          if(accs && accs.length){ account = accs[0]; statusEl.innerText = `🟢 Connected: ${account}`; } else { account = null; statusEl.innerText = '🔌 Wallet disconnected'; connectButton.innerText='🔗 Connect Wallet'; }
+        });
+        provider.on?.('chainChanged', (_cid)=>{ updateNetworkUI(_cid); try{ web3 = new Web3(provider); contract = new web3.eth.Contract(abi, contractAddress); }catch(_){} });
+        provider.on?.('disconnect', ()=>{ statusEl.innerText='🔌 Wallet disconnected'; connectButton.innerText='🔗 Connect Wallet'; });
+
+      }catch(e){
+        console.error('connectWallet error', e);
+        alert('Connection failed: ' + (e && e.message ? e.message : e));
       }
+    }
 
-      loadPinataFromStorage(); if(!$('#pinataJwtInput').value.trim()){ $('#settingsModal').style.display='flex'; $('#pinataTestStatus').textContent = 'Add your Pinata JWT to enable uploads'; }
-      await fetchIssuedCertificates().catch(err=>{ console.error('Initial fetchIssuedCertificates failed', err); notify('Could not fetch certificates: '+(err.message||err), true); });
-      if (contract) {
-        contract.methods.owner().call().then(owner => {
-            contractOwner = owner;
-            if(account && contractOwner && account.toLowerCase() === contractOwner.toLowerCase()) {
-                $('#admin-tab').classList.remove('hidden');
-            }
-        }).catch(e => console.warn("Could not fetch contract owner"));
-      }
+    async function resolveENS(addr){
+      try{
+        // ENS may not resolve on testnets; attempt and ignore errors
+        if(!web3 || !web3.eth || !web3.eth.ens) return;
+        const name = await web3.eth.ens.getName(addr);
+        if(name && name.name){ el('ensName').innerText = `ENS: ${name.name}`; ensResolved = name.name; }
+      }catch(_){ /* ignore */ }
+    }
 
-    }catch(err){ console.error('connectWallet fatal', err); notify('Connection failed: ' + (err.message||err), true); } finally{ setBusy(btn, false, '🔗 Connect Wallet'); } }
+    // ====== HASHING ======
+    el('btnGenHash').onclick = generateHashFromSelected;
+    el('btnGenHashAuto').onclick = ()=>{ if(fileInput.files.length){ generateHashFromSelected(); } else alert('Select a PDF first.'); };
+    el('copyHash').onclick = ()=>{ if(!hashInput.value) return alert('No hash'); navigator.clipboard.writeText(hashInput.value); alert('Hash copied'); };
+    fileInput.onchange = handleFiles;
 
-    // ---------- Self-tests (extra) ----------
-    async function runSelfTests(){ const diagEl = $('#diag'); try{
-      const lines = [];
-      try{ const blob = new Blob(['abc'],{type:'text/plain'}); const got = await generateHashFromFile(blob); const expected = '0xba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'; lines.push('SHA-256 test: ' + (got===expected ? 'OK' : ('FAIL ('+got+')'))); }catch(e){ lines.push('Hash test error: '+(e.message||e)); }
-      try{ const prov = selectProvider(); lines.push('Provider present: ' + (prov ? 'YES' : 'NO')); if(prov && typeof prov.request === 'function'){ try{ const accs = await prov.request({ method: 'eth_accounts' }); lines.push('eth_accounts length: ' + (accs ? accs.length : 'n/a')); }catch(e){ lines.push('eth_accounts test failed'); } }
-      }catch(e){ lines.push('Provider test error'); }
-      try{ if(!localStorage.getItem('pinataJwt')){ const early = await uploadToIPFS(new Blob(['x'])); lines.push('Pinata guard (no JWT): ' + (early === null ? 'OK' : 'UNEXPECTED')); } else { lines.push('Pinata guard: skipped (JWT present)'); } }catch(e){ lines.push('Pinata test error'); }
-      lines.push('Contract configured: ' + ((!contractAddress.includes('YOUR_NEW_SMART') && Array.isArray(abi) && abi.length>10) ? 'YES' : 'NO'));
-      if(diagEl) diagEl.innerHTML = lines.map(l=>'• '+l).join('<br>');
-    }catch(e){ console.error('runSelfTests error', e); if(diagEl) diagEl.textContent = 'Self-test error: ' + (e.message||e); } }
-
-    // ---------- Init ----------
-    window.addEventListener('DOMContentLoaded', ()=>{
-      particlesJS('particles-js', { particles:{ number:{ value:40 }, color:{ value:'#ffffff' }, size:{ value:3 }, move:{ enable:true } }, interactivity:{ events:{ onhover:{ enable:true } } }, retina_detect:true });
-      runSelfTests().catch(err => { console.error('runSelfTests promise rejected', err); notify('Self-test failed: ' + (err.message||err), true); });
-      loadPinataFromStorage();
+    // Drag & drop
+    const drop = el('dropZone');
+    drop.addEventListener('dragover', (e)=>{ e.preventDefault(); drop.style.background='#d1fae5'; });
+    drop.addEventListener('dragleave', ()=>{ drop.style.background='#ecfeff'; });
+    drop.addEventListener('drop', (e)=>{
+      e.preventDefault(); drop.style.background='#ecfeff';
+      fileInput.files = e.dataTransfer.files;
+      handleFiles();
     });
+
+    async function handleFiles(){
+      const f = fileInput.files?.[0];
+      if(!f){ pdfPreview.removeAttribute('src'); return; }
+      const url = URL.createObjectURL(f); pdfPreview.src = url;
+      // Auto-generate hash for single file selection
+      await generateHashFromSelected();
+    }
+
+    async function generateHashFromSelected(){
+      const f = fileInput.files?.[0];
+      if(!f) return alert('Please select a PDF');
+      const buf = await f.arrayBuffer();
+      const hash = await sha256Hex(buf);
+      hashInput.value = hash;
+      updateQR();
+      await checkDuplicate(hash);
+    }
+
+    async function sha256Hex(arrayBuffer){
+      const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hex = '0x' + hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
+      return hex;
+    }
+
+    // ====== QR CODE & LINKS ======
+    function updateQR(){
+      const hash = hashInput.value; if(!hash) return;
+      const params = new URLSearchParams({ certHash: hash, cid: el('ipfsCid').value || '' });
+      const url = location.origin + location.pathname + '?' + params.toString();
+      QRCode.toCanvas(el('qrCanvas'), url, { width: 200 }, (err)=>{ if(err) console.error(err); });
+    }
+    el('btnCopyLink').onclick = ()=>{
+      const hash = hashInput.value; if(!hash) return alert('No hash');
+      const params = new URLSearchParams({ certHash: hash, cid: el('ipfsCid').value || '' });
+      const url = location.origin + location.pathname + '?' + params.toString();
+      navigator.clipboard.writeText(url); alert('Verify link copied');
+    };
+    el('btnDownloadQR').onclick = ()=>{ const c = el('qrCanvas'); const a = document.createElement('a'); a.download='certificate_qr.png'; a.href = c.toDataURL(); a.click(); };
+    el('btnShareQR').onclick = ()=>{
+      const canvas = el('qrCanvas'); canvas.toBlob(async blob =>{
+        const file = new File([blob], 'certificate_qr.png', { type: 'image/png' });
+        if(navigator.share){ await navigator.share({ files:[file], title:'Certificate QR', text:'Scan to verify certificate' }); } else { alert('Sharing not supported'); }
+      });
+    };
+
+    // ====== IPFS (Pinata) ======
+    el('btnUploadIPFS').onclick = async ()=>{
+      const f = fileInput.files?.[0]; if(!f) return alert('Select a PDF first');
+      const jwt = el('pinataJwt').value.trim(); if(!jwt) return alert('Enter your temporary Pinata JWT');
+      try{
+        const form = new FormData();
+        form.append('file', f, f.name);
+        // Optional metadata
+        form.append('pinataMetadata', new Blob([JSON.stringify({ name: f.name, keyvalues: { created: new Date().toISOString() }})], {type:'application/json'}));
+        const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+          method:'POST', headers:{ Authorization: `Bearer ${jwt}` }, body: form
+        });
+        if(!res.ok){ const t = await res.text(); throw new Error(t); }
+        const data = await res.json();
+        const cid = data.IpfsHash; // v1 returns IpfsHash; v3 uses CID
+        el('ipfsCid').value = cid;
+        const gw = `https://gateway.pinata.cloud/ipfs/${cid}`;
+        const linkEl = el('gatewayUrl');
+        linkEl.textContent = gw; linkEl.onclick = ()=> window.open(gw, '_blank');
+        updateQR();
+        alert('Uploaded to IPFS via Pinata');
+      }catch(e){ alert('Pinata upload failed: ' + e.message); }
+    };
+
+    // ====== ON-CHAIN ACTIONS ======
+    el('btnIssue').onclick = issueCert;
+    el('btnRevoke').onclick = revokeCert;
+    el('btnVerify').onclick = verifyCert;
+
+    function toBytes32(hexStr){
+      // Accept 0x-prefixed 64 hex chars; if longer (SHA256 = 32 bytes = 64 hex chars), we slice.
+      if(!hexStr || !hexStr.startsWith('0x')) throw new Error('Invalid hex');
+      const clean = hexStr.slice(2);
+      if(clean.length > 64) return '0x' + clean.slice(0,64);
+      return '0x' + clean.padStart(64,'0');
+    }
+
+    async function issueCert(){
+      try{
+        if(!contract||!account) return alert('Connect wallet');
+        const hex = hashInput.value.trim(); if(!hex) return alert('No hash');
+        const exists = await contract.methods.verifyCertificate(toBytes32(hex)).call();
+        if(exists) { dupWarn.classList.remove('hidden'); return alert('Already issued on-chain'); }
+        setTxStatus('Sending issue tx...');
+        const receipt = await contract.methods.issueCertificate(toBytes32(hex)).send({ from: account });
+        handleTxReceipt(receipt, 'Issued');
+        addLocalIssued(hex, el('ipfsCid').value || null);
+        updateIssuedList();
+        updateQR();
+        alert('✅ Certificate Issued');
+      }catch(e){ alert('❌ Error issuing: '+ e.message); setTxStatus(); }
+    }
+
+    async function revokeCert(){
+      try{
+        if(!contract||!account) return alert('Connect wallet');
+        const hex = hashInput.value.trim(); if(!hex) return alert('No hash');
+        setTxStatus('Sending revoke tx...');
+        const receipt = await contract.methods.revokeCertificate(toBytes32(hex)).send({ from: account });
+        handleTxReceipt(receipt, 'Revoked');
+        markLocalRevoked(hex);
+        updateIssuedList();
+        alert('❌ Certificate Revoked');
+      }catch(e){ alert('⚠️ Error revoking: '+ e.message); setTxStatus(); }
+    }
+
+    async function verifyCert(){
+      try{
+        if(!contract) return alert('Connect wallet');
+        const hex = hashInput.value.trim(); if(!hex) return alert('No hash');
+        const isValid = await contract.methods.verifyCertificate(toBytes32(hex)).call();
+        alert(isValid ? '✅ Certificate is valid' : '❌ Certificate is not valid');
+      }catch(e){ alert('⚠️ Error verifying: ' + e.message); }
+    }
+
+    function setTxStatus(msg){
+      el('txStatus').innerHTML = msg ? msg : 'No pending transactions.';
+    }
+
+    function handleTxReceipt(receipt, action){
+      const tx = receipt?.transactionHash; const link = tx ? `${etherscanBase}${tx}` : '#';
+      setTxStatus(`${action} — tx: <a href="${link}" target="_blank">${tx}</a>`);
+    }
+
+    // ====== LOCAL INDEX (since contract has no events/timestamps) ======
+    const LS_KEY = 'issuedIndexV1';
+    function loadLocal(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); }catch{ return [] } }
+    function saveLocal(arr){ localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+    function addLocalIssued(hash, cid){
+      const arr = loadLocal();
+      arr.unshift({ hash, cid, by: account||null, ens: ensResolved||null, time: Date.now(), status:'issued' });
+      saveLocal(arr);
+    }
+    function markLocalRevoked(hash){
+      const arr = loadLocal();
+      const idx = arr.findIndex(x=>x.hash.toLowerCase()===hash.toLowerCase());
+      if(idx>-1) arr[idx].status='revoked';
+      saveLocal(arr);
+    }
+    function updateIssuedList(){
+      const arr = loadLocal();
+      const box = el('issuedList');
+      box.innerHTML = '';
+      for(const it of arr){
+        const row = document.createElement('div'); row.className='item';
+        const dt = new Date(it.time).toLocaleString();
+        const tag = it.status==='revoked'? '🚫 revoked' : '✅ issued';
+        const gw = it.cid? ` • IPFS: https://gateway.pinata.cloud/ipfs/${it.cid}` : '';
+        row.innerHTML = `<strong>${it.hash}</strong><span class="tag">${tag}</span><br><span class="muted">by ${it.ens||it.by||'unknown'} • ${dt}${gw}</span>`;
+        box.appendChild(row);
+      }
+    }
+    updateIssuedList();
+
+    async function checkDuplicate(hash){
+      if(!contract) return; // will check after connect
+      try{
+        const exists = await contract.methods.verifyCertificate(toBytes32(hash)).call();
+        if(exists) dupWarn.classList.remove('hidden'); else dupWarn.classList.add('hidden');
+      }catch(_){ dupWarn.classList.add('hidden'); }
+    }
+
+    // ====== QR SCANNER ======
+    let scannerRunning = false;
+    el('btnStartScan').onclick = async ()=>{
+      try{
+        if(scannerRunning) return;
+        html5Qrcode = new Html5Qrcode('qr-reader');
+        const cams = await Html5Qrcode.getCameras();
+        const camId = cams?.[0]?.id;
+        if(!camId) return alert('No camera');
+        await html5Qrcode.start(camId, { fps: 10, qrbox: 200 }, onScanSuccess);
+        scannerRunning = true;
+      }catch(e){ alert('Scanner error: '+ e.message); }
+    };
+    el('btnStopScan').onclick = async ()=>{
+      try{ if(html5Qrcode && scannerRunning){ await html5Qrcode.stop(); scannerRunning=false; } }catch(_){ }
+    };
+    async function onScanSuccess(text){
+      el('qr-reader-results').innerText = text;
+      try{
+        const url = new URL(text);
+        const certHash = url.searchParams.get('certHash');
+        if(certHash){ hashInput.value = certHash; updateQR(); await verifyCert(); }
+      }catch(_){ /* not a URL; ignore */ }
+    }
+
+    // ====== AUTO-VERIFY VIA URL PARAMS ======
+    (function autoVerifyFromParams(){
+      const p = new URLSearchParams(location.search);
+      const h = p.get('certHash'); const cid = p.get('cid');
+      if(h){ hashInput.value = h; if(cid) el('ipfsCid').value = cid; updateQR(); setTimeout(verifyCert, 400); }
+    })();
+
+    // ====== BATCH ISSUE (CSV of hashes) ======
+    el('btnBatchIssue').onclick = async ()=>{
+      if(!contract||!account) return alert('Connect wallet');
+      const text = el('csvHashes').value.trim(); if(!text) return alert('Paste hashes');
+      const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+      for(const line of lines){
+        try{
+          const exists = await contract.methods.verifyCertificate(toBytes32(line)).call();
+          if(exists){ console.log('Skip existing', line); continue; }
+          setTxStatus('Issuing: '+line.slice(0,12)+'...');
+          const receipt = await contract.methods.issueCertificate(toBytes32(line)).send({ from: account });
+          handleTxReceipt(receipt, 'Issued');
+          addLocalIssued(line, null);
+        }catch(e){ console.error('Batch issue failed for', line, e); }
+      }
+      updateIssuedList(); setTxStatus(); alert('Batch issue complete');
+    };
+
+    // ====== EXPORT / CLEAR LOCAL INDEX ======
+    el('btnExportLocal').onclick = ()=>{
+      const data = new Blob([JSON.stringify(loadLocal(), null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(data); a.download='issued-index.json'; a.click();
+    };
+    el('btnClearLocal').onclick = ()=>{ if(confirm('Clear local index?')){ localStorage.removeItem(LS_KEY); updateIssuedList(); } };
+
+    // ====== DIAGNOSTICS & SELF-TESTS ======
+    el('btnRunChecks').onclick = runChecks;
+    async function runChecks(){
+      const lines = [];
+      function push(msg, cls=''){ lines.push((cls?`[${cls.toUpperCase()}] `:'') + msg); }
+      push(`URL: ${location.href}`);
+      push(`Protocol secure? ${location.protocol === 'https:' || location.hostname === 'localhost'}`);
+      push(`UserAgent: ${navigator.userAgent}`);
+      const inj = !!window.ethereum; push(`Injected provider present? ${inj}`);
+      if(inj){
+        push(`Multiple providers? ${Array.isArray(window.ethereum.providers)}`);
+        const p = getInjectedProvider(); push(`MetaMask provider chosen? ${!!(p && p.isMetaMask)}`);
+        try{ const cid = await (p||window.ethereum).request({method:'eth_chainId'}); push(`chainId: ${cid}`);}catch(e){ push('chainId read error: '+ e.message, 'err'); }
+        try{ const accs = await (p||window.ethereum).request({method:'eth_accounts'}); push(`accounts (no prompt): ${accs.length}`);}catch(e){ push('eth_accounts error: '+ e.message, 'err'); }
+      } else {
+        push('MetaMask not detected. If on mobile, open in MetaMask in-app browser.', 'warn');
+      }
+      el('diag').textContent = lines.join('\n');
+    }
+
+    el('btnRunSelfTests').onclick = async ()=>{
+      const out = [];
+      // Test 1: toBytes32 padding
+      try{
+        const got = toBytes32('0x12'); const expect = '0x' + '0'.repeat(63) + '2';
+        out.push(`toBytes32 short hex => ${got === expect ? 'PASS' : 'FAIL'} (got ${got})`);
+      }catch(e){ out.push('toBytes32 short hex => EXCEPTION '+e.message); }
+      // Test 2: toBytes32 trim long
+      try{
+        const long = '0x' + 'a'.repeat(70); const got = toBytes32(long); out.push(`toBytes32 long trim => ${got.length===66 ? 'PASS' : 'FAIL'} (len ${got.length})`);
+      }catch(e){ out.push('toBytes32 long trim => EXCEPTION '+e.message); }
+      // Test 3: sha256 known string
+      try{
+        const enc = new TextEncoder().encode('hello');
+        const hex = await sha256Hex(enc.buffer);
+        const expect = '0x2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824';
+        out.push(`sha256("hello") => ${hex.toLowerCase()===expect ? 'PASS' : 'FAIL'} (got ${hex})`);
+      }catch(e){ out.push('sha256 => EXCEPTION '+e.message); }
+      // Test 4: QR generation
+      try{ hashInput.value = '0x' + 'ab'.repeat(32); updateQR(); out.push('QR generate => PASS'); }catch(e){ out.push('QR generate => FAIL '+e.message); }
+      el('selftests').textContent = out.join('\n');
+    };
+
+    // ====== HELPERS ======
+    function setTxStatus(msg){ el('txStatus').innerHTML = msg ? msg : 'No pending transactions.'; }
+    ['hashInput','ipfsCid'].forEach(id=>{ el(id).addEventListener('input', updateQR); });
+
   </script>
 </body>
 </html>
