@@ -1,631 +1,281 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Certificate Registry DApp — Enhanced (MetaMask Fix + Diagnostics)</title>
-  <!-- Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg1: #00c6ff; --bg2: #0072ff; --panel: #29b6f6; --accent: #ffdf45; --accent-2:#ffe769; --text:#ffffff; --card:#ffffff;
-      --shadow: 0 10px 25px rgba(0,0,0,0.2);
-    }
-    [data-theme="dark"]{
-      --bg1:#0f172a; --bg2:#111827; --panel:#1f2937; --accent:#f59e0b; --accent-2:#fbbf24; --text:#e5e7eb; --card:#111827;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body {
-      background: linear-gradient(120deg, var(--bg1), var(--bg2));
-      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      color: var(--text); text-align: center; margin: 0; padding: 0 0 60px;
-    }
-    header { padding: 24px 16px 8px; position: sticky; top:0; background: linear-gradient(120deg, var(--bg1), var(--bg2)); z-index:10 }
-    h1 { margin: 0 0 8px; font-size: 36px; letter-spacing: .3px }
-    .sub{opacity:.85;font-size:14px;margin-bottom:10px}
-    .row{display:flex; gap:16px; flex-wrap:wrap; align-items:stretch; justify-content:center}
-    .panel { background: var(--panel); border-radius: 18px; padding: 18px; width: min(1200px, 96%); margin: 14px auto; box-shadow: var(--shadow); text-align:left }
-    .card { background: var(--card); color:#0b1220; border-radius: 16px; padding: 16px; box-shadow: var(--shadow); flex:1; min-width: 280px }
-    .card h3{margin:0 0 10px}
-    .stack{display:flex; flex-direction:column; gap:10px}
-    .btn, button { background: var(--accent); border:none; padding:12px 16px; border-radius:12px; cursor:pointer; font-weight:700 }
-    .btn:hover { background: var(--accent-2) }
-    #connectButton { padding: 12px 16px; border-radius: 12px }
-    #status { margin: 6px 0 12px; font-weight: 700 }
-    input[type="file"], input[type="text"], input[type="password"], textarea, select {
-      padding: 12px; width: 100%; border-radius: 10px; border: none; background: #eef2ff; font-size: 14px
-    }
-    textarea{min-height:100px}
-    .grid{display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:16px}
-    .qr-wrap{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
-    canvas{ background:#fff; padding:10px; border-radius:10px }
-    .list{ max-height:260px; overflow:auto; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:12px; }
-    .list .item{ padding:8px; border-bottom:1px solid #e5e7eb; word-break:break-all }
-    .tag{display:inline-block; padding:2px 8px; border-radius:999px; background:#eef2ff; font-size:12px; margin-left:6px}
-    .pill{padding:6px 10px; border-radius:999px; background:#0ea5e9; color:#fff; font-size:12px}
-    .muted{opacity:.8}
-    .drop{border:2px dashed #a7f3d0; padding:16px; border-radius:12px; background:#ecfeff; color:#065f46; text-align:center}
-    .hidden{display:none}
-    .right{display:flex; gap:8px; align-items:center}
-    .link{color:#2563eb; text-decoration:underline; cursor:pointer}
-    footer{margin-top:20px; opacity:.8}
-    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace}
-    .ok{color:#065f46}
-    .warn{color:#92400e}
-    .err{color:#991b1b}
-    .small{font-size:12px}
-  </style>
+<meta charset="UTF-8">
+<title>Certificate Registry DApp</title>
+<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+<style>
+  body {
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0; padding: 0;
+    text-align: center;
+    color: white;
+  }
+  h1 { margin-top: 20px; font-size: 36px; }
+  #connectButton {
+    background: #ffdf45; color: black; font-weight: bold;
+    padding: 12px 20px; border: none; border-radius: 12px;
+    cursor: pointer; transition: background 0.3s;
+  }
+  #connectButton:hover { background: #ffe769; }
+  #status { margin: 10px 0 20px; font-weight: bold; }
+  .container {
+    background: rgba(255,255,255,0.1);
+    padding: 20px; border-radius: 16px; width: 80%; max-width: 900px;
+    margin: auto; box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  }
+  input, button {
+    margin: 10px 0; padding: 10px; font-size: 16px; border-radius: 8px;
+    border: none;
+  }
+  button.action {
+    width: 32%; background: #ffdf45; font-weight: bold;
+    cursor: pointer; transition: background 0.3s;
+  }
+  button.action:hover { background: #ffe769; }
+  .card-container {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 20px; margin-top: 20px;
+  }
+  .card {
+    background: transparent; width: 250px; height: 300px; perspective: 1000px;
+  }
+  .card-inner {
+    position: relative; width: 100%; height: 100%;
+    transition: transform 0.8s; transform-style: preserve-3d;
+  }
+  .card.flipped .card-inner { transform: rotateY(180deg); }
+  .card-front, .card-back {
+    position: absolute; width: 100%; height: 100%; border-radius: 12px;
+    backface-visibility: hidden; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    padding: 15px; background: rgba(255,255,255,0.15);
+  }
+  .card-front {
+    display: flex; flex-direction: column; justify-content: center;
+    color: white;
+  }
+  .card-back {
+    transform: rotateY(180deg); display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .status-valid { color: #0f0; font-weight: bold; }
+  .status-revoked { color: #f33; font-weight: bold; }
+  #eventFeed {
+    background: rgba(255,255,255,0.1); margin-top: 20px;
+    padding: 10px; border-radius: 12px; max-height: 150px; overflow-y: auto;
+    text-align: left;
+  }
+  #qrModal {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(0,0,0,0.8); display:none; align-items:center; justify-content:center;
+  }
+  #qrModalContent {
+    background:white; padding:20px; border-radius:12px;
+    color:black;
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Certificate Registry DApp — Enhanced</h1>
-    <div class="row" style="justify-content:center">
-      <button id="connectButton" class="btn">🔗 Connect Wallet</button>
-      <button id="btnSwitchSepolia" class="btn" title="Switch to Sepolia">🔁 Switch to Sepolia</button>
-      <button id="themeToggle" class="btn" title="Toggle theme">🌓 Theme</button>
-    </div>
-    <div id="status" class="sub">🔌 Wallet not connected</div>
-    <div id="netInfo" class="sub small mono"></div>
-  </header>
 
-  <section class="panel">
-    <div class="grid">
-      <!-- Issue / Upload -->
-      <div class="card stack">
-        <h3>1) Upload PDF & Generate Hash</h3>
-        <div id="dropZone" class="drop">Drag & drop PDF here or use picker</div>
-        <input type="file" id="fileInput" accept="application/pdf" multiple />
-        <div class="row">
-          <button id="btnGenHash" class="btn">📄 Generate Hash</button>
-          <button id="btnGenHashAuto" class="btn">⚡ Generate on Upload</button>
-        </div>
-        <input type="text" id="hashInput" placeholder="Certificate Hash (0x...)" />
-        <div class="right">
-          <button id="copyHash" class="btn">📋 Copy Hash</button>
-          <span id="dupWarn" class="pill hidden">Duplicate?</span>
-        </div>
-        <div class="qr-wrap">
-          <canvas id="qrCanvas" width="200" height="200"></canvas>
-          <div class="stack" style="flex:1">
-            <button id="btnCopyLink" class="btn">🔗 Copy Verify Link</button>
-            <button id="btnDownloadQR" class="btn">⬇️ Download QR</button>
-            <button id="btnShareQR" class="btn">📤 Share QR</button>
-          </div>
-        </div>
-        <div class="stack">
-          <h4 class="muted">PDF Preview</h4>
-          <embed id="pdfPreview" type="application/pdf" style="width:100%; height:240px; border-radius:12px; background:#fff" />
-        </div>
-      </div>
+<h1>Certificate Registry DApp</h1>
+<button id="connectButton">🔗 Connect Wallet</button>
+<div id="status">🔌 Wallet not connected</div>
 
-      <!-- Pinata IPFS -->
-      <div class="card stack">
-        <h3>2) Upload to IPFS (Pinata)</h3>
-        <div class="muted">Paste a <strong>Pinata JWT</strong> (temporary) to upload from browser. Do not use production keys client-side.</div>
-        <input type="password" id="pinataJwt" placeholder="Pinata JWT (starts with ey...)" />
-        <button id="btnUploadIPFS" class="btn">📦 Upload Selected PDF to IPFS</button>
-        <input type="text" id="ipfsCid" placeholder="Returned CID" readonly />
-        <div class="muted">Gateway: <span id="gatewayUrl" class="link"></span></div>
-      </div>
+<div class="container">
+  <input type="file" id="fileInput" accept=".pdf" />
+  <input type="text" id="hashInput" placeholder="Certificate Hash" style="width:90%" />
+  <div>
+    <button class="action" onclick="issueCert()">✅ Issue</button>
+    <button class="action" onclick="verifyCert()">🔍 Verify</button>
+    <button class="action" onclick="revokeCert()">❌ Revoke</button>
+  </div>
+  <button onclick="openQRScanner()">📷 Scan QR to Verify</button>
+</div>
 
-      <!-- On-chain actions -->
-      <div class="card stack">
-        <h3>3) On‑Chain Actions</h3>
-        <button id="btnIssue" class="btn">✅ Issue Certificate</button>
-        <button id="btnRevoke" class="btn">❌ Revoke Certificate</button>
-        <button id="btnVerify" class="btn">🔍 Verify Certificate</button>
-        <div id="txStatus" class="muted">No pending transactions.</div>
-        <div id="ensName" class="muted"></div>
-      </div>
+<h2>📜 Certificates</h2>
+<div class="card-container" id="certContainer"></div>
 
-      <!-- Scanner / Auto verify -->
-      <div class="card stack">
-        <h3>4) Scan QR to Verify</h3>
-        <div id="qr-reader" style="width:100%"></div>
-        <div id="qr-reader-results" class="muted"></div>
-        <button id="btnStartScan" class="btn">📷 Start Scanner</button>
-        <button id="btnStopScan" class="btn">🛑 Stop Scanner</button>
-        <div class="muted">Open page with <code>?certHash=0x...</code> to auto-verify.</div>
-      </div>
+<h2>📢 Event Feed</h2>
+<div id="eventFeed"></div>
 
-      <!-- Diagnostics -->
-      <div class="card stack">
-        <h3>Connection Diagnostics</h3>
-        <div class="muted small">Use this to troubleshoot MetaMask connection issues.</div>
-        <button id="btnRunChecks" class="btn">🧪 Run Environment Checks</button>
-        <pre id="diag" class="mono" style="white-space:pre-wrap"></pre>
-      </div>
-    </div>
-  </section>
+<!-- QR Scanner Modal -->
+<div id="qrModal">
+  <div id="qrModalContent">
+    <div id="reader" style="width:300px;"></div>
+    <button onclick="closeQRScanner()">Close</button>
+  </div>
+</div>
 
-  <section class="panel">
-    <div class="grid">
-      <div class="card stack">
-        <h3>Issued Hashes (local index)</h3>
-        <div class="list" id="issuedList"></div>
-        <div class="row">
-          <button id="btnExportLocal" class="btn">💾 Export Local Index (JSON)</button>
-          <button id="btnClearLocal" class="btn">🧹 Clear Local Index</button>
-        </div>
-      </div>
-      <div class="card stack">
-        <h3>Bulk Tools</h3>
-        <div class="muted">Batch Issue from CSV of hashes (one 0x hash per line).</div>
-        <textarea id="csvHashes" placeholder="0xabc...\n0xdef...\n..."></textarea>
-        <button id="btnBatchIssue" class="btn">📚 Batch Issue</button>
-      </div>
-      <div class="card stack">
-        <h3>Self‑Tests</h3>
-        <div class="muted small">Verifies key helper functions locally (no blockchain needed).</div>
-        <button id="btnRunSelfTests" class="btn">✅ Run Self‑Tests</button>
-        <pre id="selftests" class="mono" style="white-space:pre-wrap"></pre>
-      </div>
-    </div>
-  </section>
+<script>
+let web3, account, contract;
+const contractAddress = "0x8df5b74f5aA6DF84870e9A29ED0569008A6a3733";
+const abi = [
+ { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "issueCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+ { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "revokeCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
+ { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "verifyCertificate", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }
+];
 
-  <footer>
-    <span class="muted">Contract network should match your wallet network. This UI supports duplicate-check, live status, QR scan, IPFS upload (Pinata), PDF preview, and auto-verify.</span>
-  </footer>
+document.getElementById("connectButton").onclick = connectWallet;
+document.getElementById("fileInput").addEventListener("change", autoHash);
 
-  <script>
-    // ====== CONFIG ======
-    // Set your deployed address here
-    const contractAddress = "0x8df5b74f5aA6DF84870e9A29ED0569008A6a3733";
-    const abi = [
-      { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "issueCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-      { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "revokeCertificate", "outputs": [], "stateMutability": "nonpayable", "type": "function" },
-      { "inputs": [{ "internalType": "bytes32", "name": "certHash", "type": "bytes32" }], "name": "verifyCertificate", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }
-    ];
-
-    const CHAIN = {
-      sepolia: {
-        chainId: '0xaa36a7', // 11155111
-        chainName: 'Sepolia',
-        rpcUrls: ['https://rpc.sepolia.org'],
-        blockExplorerUrls: ['https://sepolia.etherscan.io']
-      },
-      mainnet: {
-        chainId: '0x1',
-        chainName: 'Ethereum Mainnet',
-        rpcUrls: ['https://cloudflare-eth.com'],
-        blockExplorerUrls: ['https://etherscan.io']
-      }
-    };
-
-    // ====== STATE ======
-    let provider, web3, account, contract, ensResolved;
-    let html5Qrcode; // scanner instance
-    let etherscanBase = 'https://sepolia.etherscan.io/tx/';
-
-    // ====== DOM ======
-    const el = (id)=>document.getElementById(id);
-    const connectButton = el('connectButton');
-    const statusEl = el('status');
-    const netInfo = el('netInfo');
-    const fileInput = el('fileInput');
-    const hashInput = el('hashInput');
-    const pdfPreview = el('pdfPreview');
-    const dupWarn = el('dupWarn');
-
-    // ====== THEME ======
-    const themeToggle = el('themeToggle');
-    (function initTheme(){
-      const saved = localStorage.getItem('theme') || 'light';
-      document.documentElement.setAttribute('data-theme', saved);
-    })();
-    themeToggle.onclick = ()=>{
-      const cur = document.documentElement.getAttribute('data-theme')||'light';
-      const next = cur==='light'?'dark':'light';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
-    };
-
-    // ====== PROVIDER DETECTION (fix for MetaMask connection) ======
-    function getInjectedProvider(){
-      if(!window.ethereum) return null;
-      if(window.ethereum.providers && Array.isArray(window.ethereum.providers)){
-        const mm = window.ethereum.providers.find(p=>p.isMetaMask);
-        if(mm) return mm;
-      }
-      return window.ethereum;
+async function connectWallet() {
+  if (window.ethereum) {
+    try {
+      web3 = new Web3(window.ethereum);
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await web3.eth.getAccounts();
+      account = accounts[0];
+      contract = new web3.eth.Contract(abi, contractAddress);
+      document.getElementById("connectButton").innerText = "✅ Wallet Connected";
+      document.getElementById("status").innerText = `🟢 Connected: ${account}`;
+    } catch (e) {
+      alert("Connection failed: " + e.message);
     }
+  } else {
+    alert("Please install MetaMask");
+  }
+}
 
-    function updateNetworkUI(chainId){
-      const human = chainId ? `${parseInt(chainId,16)} (${chainId})` : 'unknown';
-      netInfo.innerHTML = `Network chainId: <b>${human}</b>`;
-      if(chainId === CHAIN.sepolia.chainId){
-        etherscanBase = CHAIN.sepolia.blockExplorerUrls[0] + '/tx/';
-      } else if(chainId === CHAIN.mainnet.chainId){
-        etherscanBase = CHAIN.mainnet.blockExplorerUrls[0] + '/tx/';
-      }
-    }
+async function autoHash() {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) return;
+  const arrayBuffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = "0x" + hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  document.getElementById("hashInput").value = hashHex;
+}
 
-    async function ensureSepolia(){
-      if(!provider) throw new Error('No provider');
-      const current = await provider.request({ method: 'eth_chainId' });
-      updateNetworkUI(current);
-      if(current === CHAIN.sepolia.chainId) return true;
-      try{
-        await provider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN.sepolia.chainId }] });
-        updateNetworkUI(CHAIN.sepolia.chainId);
-        return true;
-      }catch(switchErr){
-        // If not added, add it
-        if(switchErr && switchErr.code === 4902){
-          await provider.request({ method: 'wallet_addEthereumChain', params: [{
-            chainId: CHAIN.sepolia.chainId,
-            chainName: CHAIN.sepolia.chainName,
-            rpcUrls: CHAIN.sepolia.rpcUrls,
-            blockExplorerUrls: CHAIN.sepolia.blockExplorerUrls
-          }]});
-          return true;
-        }
-        throw switchErr;
-      }
-    }
+function addCertCard(cert) {
+  const container = document.getElementById("certContainer");
+  const card = document.createElement("div");
+  card.className = "card";
+  card.onclick = () => card.classList.toggle("flipped");
 
-    // ====== WALLET ======
-    connectButton.onclick = connectWallet;
-    el('btnSwitchSepolia').onclick = async ()=>{
-      try{
-        provider = getInjectedProvider();
-        if(!provider) return alert('No injected wallet detected. Install MetaMask.');
-        await ensureSepolia();
-        alert('Switched to Sepolia');
-      }catch(e){ alert('Could not switch network: ' + e.message); }
-    };
+  const inner = document.createElement("div");
+  inner.className = "card-inner";
 
-    async function connectWallet(){
-      try{
-        // Pre-flight environment checks
-        if(location.protocol !== 'https:' && location.hostname !== 'localhost'){
-          return alert('MetaMask only injects on HTTPS or localhost. Please serve this page over HTTPS or run on localhost.');
-        }
-        provider = getInjectedProvider();
-        if(!provider){
-          const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-          const link = isMobile ? 'https://metamask.app.link/dapp/' + location.host + location.pathname : 'https://metamask.io/download/';
-          return alert('MetaMask not found. Install it: ' + link);
-        }
+  const front = document.createElement("div");
+  front.className = "card-front";
+  front.innerHTML = `
+    <h3>📄 ${cert.name || 'Certificate'}</h3>
+    <p>Issuer: ${cert.issuer.slice(0,6)}...${cert.issuer.slice(-4)}</p>
+    <p>Date: ${new Date(cert.date).toLocaleString()}</p>
+    <p class="${cert.status==='valid'?'status-valid':'status-revoked'}">${cert.status==='valid'?'✅ Valid':'❌ Revoked'}</p>
+  `;
 
-        // Request accounts
-        const accounts = await provider.request({ method: 'eth_requestAccounts' }).catch(err=>{
-          if(err && err.code === 4001) throw new Error('User rejected connection request.');
-          throw err;
-        });
-        account = accounts[0];
+  const back = document.createElement("div");
+  back.className = "card-back";
+  const canvas = document.createElement("canvas");
+  QRCode.toCanvas(canvas, cert.hash);
+  back.appendChild(canvas);
 
-        // Ensure network
-        await ensureSepolia();
+  inner.appendChild(front);
+  inner.appendChild(back);
+  card.appendChild(inner);
+  container.prepend(card);
+}
 
-        // Init web3 + contract
-        web3 = new Web3(provider);
-        if(!/^0x[a-fA-F0-9]{40}$/.test(contractAddress)){
-          throw new Error('Invalid contract address configured.');
-        }
-        contract = new web3.eth.Contract(abi, contractAddress);
+async function issueCert() {
+  const hash = document.getElementById("hashInput").value;
+  if (!hash) return alert("Please provide a hash");
+  try {
+    await contract.methods.issueCertificate(hash).send({ from: account });
+    const block = await web3.eth.getBlock("latest");
+    const cert = { hash, name: document.getElementById("fileInput").files[0]?.name, issuer: account, date: block.timestamp*1000, status: 'valid' };
+    saveCert(cert);
+    addCertCard(cert);
+    addEventFeed(`✅ Issued: ${hash}`);
+    launchConfetti();
+  } catch (e) {
+    alert("Error issuing: " + e.message);
+  }
+}
 
-        // UI
-        connectButton.innerText = '✅ Wallet Connected';
-        statusEl.innerText = `🟢 Connected: ${account}`;
-        resolveENS(account).catch(()=>{});
+async function verifyCert() {
+  const hash = document.getElementById("hashInput").value;
+  if (!hash) return alert("Enter hash");
+  try {
+    const isValid = await contract.methods.verifyCertificate(hash).call();
+    alert(isValid ? "✅ Valid" : "❌ Not valid");
+  } catch (e) {
+    alert("Error verifying: " + e.message);
+  }
+}
 
-        // Events
-        provider.on?.('accountsChanged', (accs)=>{
-          if(accs && accs.length){ account = accs[0]; statusEl.innerText = `🟢 Connected: ${account}`; } else { account = null; statusEl.innerText = '🔌 Wallet disconnected'; connectButton.innerText='🔗 Connect Wallet'; }
-        });
-        provider.on?.('chainChanged', (_cid)=>{ updateNetworkUI(_cid); try{ web3 = new Web3(provider); contract = new web3.eth.Contract(abi, contractAddress); }catch(_){} });
-        provider.on?.('disconnect', ()=>{ statusEl.innerText='🔌 Wallet disconnected'; connectButton.innerText='🔗 Connect Wallet'; });
+async function revokeCert() {
+  const hash = document.getElementById("hashInput").value;
+  if (!hash) return alert("Enter hash");
+  try {
+    await contract.methods.revokeCertificate(hash).send({ from: account });
+    updateCertStatus(hash, 'revoked');
+    addEventFeed(`❌ Revoked: ${hash}`);
+  } catch (e) {
+    alert("Error revoking: " + e.message);
+  }
+}
 
-      }catch(e){
-        console.error('connectWallet error', e);
-        alert('Connection failed: ' + (e && e.message ? e.message : e));
-      }
-    }
+function saveCert(cert) {
+  let certs = JSON.parse(localStorage.getItem("certificates") || "[]");
+  certs.unshift(cert);
+  localStorage.setItem("certificates", JSON.stringify(certs));
+}
 
-    async function resolveENS(addr){
-      try{
-        // ENS may not resolve on testnets; attempt and ignore errors
-        if(!web3 || !web3.eth || !web3.eth.ens) return;
-        const name = await web3.eth.ens.getName(addr);
-        if(name && name.name){ el('ensName').innerText = `ENS: ${name.name}`; ensResolved = name.name; }
-      }catch(_){ /* ignore */ }
-    }
+function loadCerts() {
+  const certs = JSON.parse(localStorage.getItem("certificates") || "[]");
+  certs.forEach(addCertCard);
+}
 
-    // ====== HASHING ======
-    el('btnGenHash').onclick = generateHashFromSelected;
-    el('btnGenHashAuto').onclick = ()=>{ if(fileInput.files.length){ generateHashFromSelected(); } else alert('Select a PDF first.'); };
-    el('copyHash').onclick = ()=>{ if(!hashInput.value) return alert('No hash'); navigator.clipboard.writeText(hashInput.value); alert('Hash copied'); };
-    fileInput.onchange = handleFiles;
+function updateCertStatus(hash, status) {
+  let certs = JSON.parse(localStorage.getItem("certificates") || "[]");
+  certs = certs.map(c => c.hash === hash ? {...c, status} : c);
+  localStorage.setItem("certificates", JSON.stringify(certs));
+  document.getElementById("certContainer").innerHTML = "";
+  certs.forEach(addCertCard);
+}
 
-    // Drag & drop
-    const drop = el('dropZone');
-    drop.addEventListener('dragover', (e)=>{ e.preventDefault(); drop.style.background='#d1fae5'; });
-    drop.addEventListener('dragleave', ()=>{ drop.style.background='#ecfeff'; });
-    drop.addEventListener('drop', (e)=>{
-      e.preventDefault(); drop.style.background='#ecfeff';
-      fileInput.files = e.dataTransfer.files;
-      handleFiles();
+function addEventFeed(text) {
+  const feed = document.getElementById("eventFeed");
+  const div = document.createElement("div");
+  div.textContent = `${new Date().toLocaleTimeString()} - ${text}`;
+  feed.prepend(div);
+}
+
+function openQRScanner() {
+  document.getElementById("qrModal").style.display = "flex";
+  const html5QrCode = new Html5Qrcode("reader");
+  html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 },
+    qrCodeMessage => {
+      document.getElementById("hashInput").value = qrCodeMessage;
+      verifyCert();
+      html5QrCode.stop();
+      closeQRScanner();
     });
+}
 
-    async function handleFiles(){
-      const f = fileInput.files?.[0];
-      if(!f){ pdfPreview.removeAttribute('src'); return; }
-      const url = URL.createObjectURL(f); pdfPreview.src = url;
-      // Auto-generate hash for single file selection
-      await generateHashFromSelected();
-    }
+function closeQRScanner() {
+  document.getElementById("qrModal").style.display = "none";
+}
 
-    async function generateHashFromSelected(){
-      const f = fileInput.files?.[0];
-      if(!f) return alert('Please select a PDF');
-      const buf = await f.arrayBuffer();
-      const hash = await sha256Hex(buf);
-      hashInput.value = hash;
-      updateQR();
-      await checkDuplicate(hash);
-    }
+function launchConfetti() {
+  // quick confetti effect
+  for (let i=0;i<50;i++){
+    const conf = document.createElement("div");
+    conf.style.position="fixed";conf.style.left=Math.random()*100+"%";conf.style.top="-10px";
+    conf.style.width="8px";conf.style.height="8px";conf.style.background=["#ff0","#0f0","#0ff","#f0f","#f00"][Math.floor(Math.random()*5)];
+    conf.style.opacity="0.8";conf.style.borderRadius="50%";
+    document.body.appendChild(conf);
+    let fall=setInterval(()=>{
+      conf.style.top=(parseFloat(conf.style.top)+3)+"px";
+      if(parseFloat(conf.style.top)>window.innerHeight) {clearInterval(fall);conf.remove();}
+    },20);
+  }
+}
 
-    async function sha256Hex(arrayBuffer){
-      const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hex = '0x' + hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
-      return hex;
-    }
-
-    // ====== QR CODE & LINKS ======
-    function updateQR(){
-      const hash = hashInput.value; if(!hash) return;
-      const params = new URLSearchParams({ certHash: hash, cid: el('ipfsCid').value || '' });
-      const url = location.origin + location.pathname + '?' + params.toString();
-      QRCode.toCanvas(el('qrCanvas'), url, { width: 200 }, (err)=>{ if(err) console.error(err); });
-    }
-    el('btnCopyLink').onclick = ()=>{
-      const hash = hashInput.value; if(!hash) return alert('No hash');
-      const params = new URLSearchParams({ certHash: hash, cid: el('ipfsCid').value || '' });
-      const url = location.origin + location.pathname + '?' + params.toString();
-      navigator.clipboard.writeText(url); alert('Verify link copied');
-    };
-    el('btnDownloadQR').onclick = ()=>{ const c = el('qrCanvas'); const a = document.createElement('a'); a.download='certificate_qr.png'; a.href = c.toDataURL(); a.click(); };
-    el('btnShareQR').onclick = ()=>{
-      const canvas = el('qrCanvas'); canvas.toBlob(async blob =>{
-        const file = new File([blob], 'certificate_qr.png', { type: 'image/png' });
-        if(navigator.share){ await navigator.share({ files:[file], title:'Certificate QR', text:'Scan to verify certificate' }); } else { alert('Sharing not supported'); }
-      });
-    };
-
-    // ====== IPFS (Pinata) ======
-    el('btnUploadIPFS').onclick = async ()=>{
-      const f = fileInput.files?.[0]; if(!f) return alert('Select a PDF first');
-      const jwt = el('pinataJwt').value.trim(); if(!jwt) return alert('Enter your temporary Pinata JWT');
-      try{
-        const form = new FormData();
-        form.append('file', f, f.name);
-        // Optional metadata
-        form.append('pinataMetadata', new Blob([JSON.stringify({ name: f.name, keyvalues: { created: new Date().toISOString() }})], {type:'application/json'}));
-        const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-          method:'POST', headers:{ Authorization: `Bearer ${jwt}` }, body: form
-        });
-        if(!res.ok){ const t = await res.text(); throw new Error(t); }
-        const data = await res.json();
-        const cid = data.IpfsHash; // v1 returns IpfsHash; v3 uses CID
-        el('ipfsCid').value = cid;
-        const gw = `https://gateway.pinata.cloud/ipfs/${cid}`;
-        const linkEl = el('gatewayUrl');
-        linkEl.textContent = gw; linkEl.onclick = ()=> window.open(gw, '_blank');
-        updateQR();
-        alert('Uploaded to IPFS via Pinata');
-      }catch(e){ alert('Pinata upload failed: ' + e.message); }
-    };
-
-    // ====== ON-CHAIN ACTIONS ======
-    el('btnIssue').onclick = issueCert;
-    el('btnRevoke').onclick = revokeCert;
-    el('btnVerify').onclick = verifyCert;
-
-    function toBytes32(hexStr){
-      // Accept 0x-prefixed 64 hex chars; if longer (SHA256 = 32 bytes = 64 hex chars), we slice.
-      if(!hexStr || !hexStr.startsWith('0x')) throw new Error('Invalid hex');
-      const clean = hexStr.slice(2);
-      if(clean.length > 64) return '0x' + clean.slice(0,64);
-      return '0x' + clean.padStart(64,'0');
-    }
-
-    async function issueCert(){
-      try{
-        if(!contract||!account) return alert('Connect wallet');
-        const hex = hashInput.value.trim(); if(!hex) return alert('No hash');
-        const exists = await contract.methods.verifyCertificate(toBytes32(hex)).call();
-        if(exists) { dupWarn.classList.remove('hidden'); return alert('Already issued on-chain'); }
-        setTxStatus('Sending issue tx...');
-        const receipt = await contract.methods.issueCertificate(toBytes32(hex)).send({ from: account });
-        handleTxReceipt(receipt, 'Issued');
-        addLocalIssued(hex, el('ipfsCid').value || null);
-        updateIssuedList();
-        updateQR();
-        alert('✅ Certificate Issued');
-      }catch(e){ alert('❌ Error issuing: '+ e.message); setTxStatus(); }
-    }
-
-    async function revokeCert(){
-      try{
-        if(!contract||!account) return alert('Connect wallet');
-        const hex = hashInput.value.trim(); if(!hex) return alert('No hash');
-        setTxStatus('Sending revoke tx...');
-        const receipt = await contract.methods.revokeCertificate(toBytes32(hex)).send({ from: account });
-        handleTxReceipt(receipt, 'Revoked');
-        markLocalRevoked(hex);
-        updateIssuedList();
-        alert('❌ Certificate Revoked');
-      }catch(e){ alert('⚠️ Error revoking: '+ e.message); setTxStatus(); }
-    }
-
-    async function verifyCert(){
-      try{
-        if(!contract) return alert('Connect wallet');
-        const hex = hashInput.value.trim(); if(!hex) return alert('No hash');
-        const isValid = await contract.methods.verifyCertificate(toBytes32(hex)).call();
-        alert(isValid ? '✅ Certificate is valid' : '❌ Certificate is not valid');
-      }catch(e){ alert('⚠️ Error verifying: ' + e.message); }
-    }
-
-    function setTxStatus(msg){
-      el('txStatus').innerHTML = msg ? msg : 'No pending transactions.';
-    }
-
-    function handleTxReceipt(receipt, action){
-      const tx = receipt?.transactionHash; const link = tx ? `${etherscanBase}${tx}` : '#';
-      setTxStatus(`${action} — tx: <a href="${link}" target="_blank">${tx}</a>`);
-    }
-
-    // ====== LOCAL INDEX (since contract has no events/timestamps) ======
-    const LS_KEY = 'issuedIndexV1';
-    function loadLocal(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); }catch{ return [] } }
-    function saveLocal(arr){ localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
-    function addLocalIssued(hash, cid){
-      const arr = loadLocal();
-      arr.unshift({ hash, cid, by: account||null, ens: ensResolved||null, time: Date.now(), status:'issued' });
-      saveLocal(arr);
-    }
-    function markLocalRevoked(hash){
-      const arr = loadLocal();
-      const idx = arr.findIndex(x=>x.hash.toLowerCase()===hash.toLowerCase());
-      if(idx>-1) arr[idx].status='revoked';
-      saveLocal(arr);
-    }
-    function updateIssuedList(){
-      const arr = loadLocal();
-      const box = el('issuedList');
-      box.innerHTML = '';
-      for(const it of arr){
-        const row = document.createElement('div'); row.className='item';
-        const dt = new Date(it.time).toLocaleString();
-        const tag = it.status==='revoked'? '🚫 revoked' : '✅ issued';
-        const gw = it.cid? ` • IPFS: https://gateway.pinata.cloud/ipfs/${it.cid}` : '';
-        row.innerHTML = `<strong>${it.hash}</strong><span class="tag">${tag}</span><br><span class="muted">by ${it.ens||it.by||'unknown'} • ${dt}${gw}</span>`;
-        box.appendChild(row);
-      }
-    }
-    updateIssuedList();
-
-    async function checkDuplicate(hash){
-      if(!contract) return; // will check after connect
-      try{
-        const exists = await contract.methods.verifyCertificate(toBytes32(hash)).call();
-        if(exists) dupWarn.classList.remove('hidden'); else dupWarn.classList.add('hidden');
-      }catch(_){ dupWarn.classList.add('hidden'); }
-    }
-
-    // ====== QR SCANNER ======
-    let scannerRunning = false;
-    el('btnStartScan').onclick = async ()=>{
-      try{
-        if(scannerRunning) return;
-        html5Qrcode = new Html5Qrcode('qr-reader');
-        const cams = await Html5Qrcode.getCameras();
-        const camId = cams?.[0]?.id;
-        if(!camId) return alert('No camera');
-        await html5Qrcode.start(camId, { fps: 10, qrbox: 200 }, onScanSuccess);
-        scannerRunning = true;
-      }catch(e){ alert('Scanner error: '+ e.message); }
-    };
-    el('btnStopScan').onclick = async ()=>{
-      try{ if(html5Qrcode && scannerRunning){ await html5Qrcode.stop(); scannerRunning=false; } }catch(_){ }
-    };
-    async function onScanSuccess(text){
-      el('qr-reader-results').innerText = text;
-      try{
-        const url = new URL(text);
-        const certHash = url.searchParams.get('certHash');
-        if(certHash){ hashInput.value = certHash; updateQR(); await verifyCert(); }
-      }catch(_){ /* not a URL; ignore */ }
-    }
-
-    // ====== AUTO-VERIFY VIA URL PARAMS ======
-    (function autoVerifyFromParams(){
-      const p = new URLSearchParams(location.search);
-      const h = p.get('certHash'); const cid = p.get('cid');
-      if(h){ hashInput.value = h; if(cid) el('ipfsCid').value = cid; updateQR(); setTimeout(verifyCert, 400); }
-    })();
-
-    // ====== BATCH ISSUE (CSV of hashes) ======
-    el('btnBatchIssue').onclick = async ()=>{
-      if(!contract||!account) return alert('Connect wallet');
-      const text = el('csvHashes').value.trim(); if(!text) return alert('Paste hashes');
-      const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-      for(const line of lines){
-        try{
-          const exists = await contract.methods.verifyCertificate(toBytes32(line)).call();
-          if(exists){ console.log('Skip existing', line); continue; }
-          setTxStatus('Issuing: '+line.slice(0,12)+'...');
-          const receipt = await contract.methods.issueCertificate(toBytes32(line)).send({ from: account });
-          handleTxReceipt(receipt, 'Issued');
-          addLocalIssued(line, null);
-        }catch(e){ console.error('Batch issue failed for', line, e); }
-      }
-      updateIssuedList(); setTxStatus(); alert('Batch issue complete');
-    };
-
-    // ====== EXPORT / CLEAR LOCAL INDEX ======
-    el('btnExportLocal').onclick = ()=>{
-      const data = new Blob([JSON.stringify(loadLocal(), null, 2)], {type:'application/json'});
-      const a = document.createElement('a'); a.href = URL.createObjectURL(data); a.download='issued-index.json'; a.click();
-    };
-    el('btnClearLocal').onclick = ()=>{ if(confirm('Clear local index?')){ localStorage.removeItem(LS_KEY); updateIssuedList(); } };
-
-    // ====== DIAGNOSTICS & SELF-TESTS ======
-    el('btnRunChecks').onclick = runChecks;
-    async function runChecks(){
-      const lines = [];
-      function push(msg, cls=''){ lines.push((cls?`[${cls.toUpperCase()}] `:'') + msg); }
-      push(`URL: ${location.href}`);
-      push(`Protocol secure? ${location.protocol === 'https:' || location.hostname === 'localhost'}`);
-      push(`UserAgent: ${navigator.userAgent}`);
-      const inj = !!window.ethereum; push(`Injected provider present? ${inj}`);
-      if(inj){
-        push(`Multiple providers? ${Array.isArray(window.ethereum.providers)}`);
-        const p = getInjectedProvider(); push(`MetaMask provider chosen? ${!!(p && p.isMetaMask)}`);
-        try{ const cid = await (p||window.ethereum).request({method:'eth_chainId'}); push(`chainId: ${cid}`);}catch(e){ push('chainId read error: '+ e.message, 'err'); }
-        try{ const accs = await (p||window.ethereum).request({method:'eth_accounts'}); push(`accounts (no prompt): ${accs.length}`);}catch(e){ push('eth_accounts error: '+ e.message, 'err'); }
-      } else {
-        push('MetaMask not detected. If on mobile, open in MetaMask in-app browser.', 'warn');
-      }
-      el('diag').textContent = lines.join('\n');
-    }
-
-    el('btnRunSelfTests').onclick = async ()=>{
-      const out = [];
-      // Test 1: toBytes32 padding
-      try{
-        const got = toBytes32('0x12'); const expect = '0x' + '0'.repeat(63) + '2';
-        out.push(`toBytes32 short hex => ${got === expect ? 'PASS' : 'FAIL'} (got ${got})`);
-      }catch(e){ out.push('toBytes32 short hex => EXCEPTION '+e.message); }
-      // Test 2: toBytes32 trim long
-      try{
-        const long = '0x' + 'a'.repeat(70); const got = toBytes32(long); out.push(`toBytes32 long trim => ${got.length===66 ? 'PASS' : 'FAIL'} (len ${got.length})`);
-      }catch(e){ out.push('toBytes32 long trim => EXCEPTION '+e.message); }
-      // Test 3: sha256 known string
-      try{
-        const enc = new TextEncoder().encode('hello');
-        const hex = await sha256Hex(enc.buffer);
-        const expect = '0x2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824';
-        out.push(`sha256("hello") => ${hex.toLowerCase()===expect ? 'PASS' : 'FAIL'} (got ${hex})`);
-      }catch(e){ out.push('sha256 => EXCEPTION '+e.message); }
-      // Test 4: QR generation
-      try{ hashInput.value = '0x' + 'ab'.repeat(32); updateQR(); out.push('QR generate => PASS'); }catch(e){ out.push('QR generate => FAIL '+e.message); }
-      el('selftests').textContent = out.join('\n');
-    };
-
-    // ====== HELPERS ======
-    function setTxStatus(msg){ el('txStatus').innerHTML = msg ? msg : 'No pending transactions.'; }
-    ['hashInput','ipfsCid'].forEach(id=>{ el(id).addEventListener('input', updateQR); });
-
-  </script>
+window.onload = loadCerts;
+</script>
 </body>
 </html>
