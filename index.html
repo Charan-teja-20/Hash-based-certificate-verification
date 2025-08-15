@@ -645,10 +645,13 @@
                 web3 = new Web3(window.ethereum);
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 account = accounts[0];
+                if (contractAddress === "0xYOUR_NEW_SMART_CONTRACT_ADDRESS") {
+                    return showNotification("Error: Smart Contract Address is not set in the code.", true);
+                }
                 contract = new web3.eth.Contract(abi, contractAddress);
-                const connectedAddressDisplay = await getEnsName(account);
+                const connectedAddressDisplay = await getEnsName(account) || account;
                 document.getElementById("connectButton").innerText = "✅ Wallet Connected";
-                document.getElementById("status").innerHTML = `🟢 Connected: ${connectedAddressDisplay}`;
+                document.getElementById("status").innerHTML = `🟢 Connected: ${connectedAddressDisplay.substring(0, 15)}...`;
                 await checkUserRole();
                 await fetchIssuedCertificates();
             } catch (e) {
@@ -657,10 +660,9 @@
         }
         
         async function getEnsName(address) {
-            // This functionality is often provider-specific and might not be available on all testnets.
-            // For it to work, your connected wallet's network must support ENS reverse resolution.
-            // It might require ethers.js for more robust support, but this is a web3.js attempt.
-            return address; // Placeholder for simplicity. A full implementation is more complex.
+            // This is a simplified placeholder as robust ENS support can be complex.
+            // For a full implementation, consider using the ethers.js library.
+            return null; 
         }
 
         function filterHistory() {
@@ -683,7 +685,7 @@
 
         async function uploadToIPFS(file) {
             if (!pinataJwt || pinataJwt === 'YOUR_PINATA_JWT') {
-                showNotification("Pinata API Key (JWT) is not set.", true);
+                showNotification("Pinata API Key (JWT) is not set in the code.", true);
                 return null;
             }
             showNotification("🛰️ Uploading file to IPFS via Pinata...");
@@ -746,7 +748,7 @@
             qrSection.style.display = 'none';
             try {
                 const certDetails = await contract.methods.getCertificateDetails(hash).call();
-                const issuerDisplay = await getEnsName(certDetails.issuer);
+                const issuerDisplay = await getEnsName(certDetails.issuer) || certDetails.issuer;
                 resultDiv.style.display = 'block';
                 resultDiv.innerHTML = `
                     <h3 style="color: ${certDetails.isValid ? 'var(--primary-glow)' : 'var(--secondary-glow)'}; text-shadow: 0 0 5px ${certDetails.isValid ? 'var(--primary-glow)' : 'var(--secondary-glow)'};">
