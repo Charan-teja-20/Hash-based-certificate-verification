@@ -249,15 +249,17 @@
         // ==================================================================
         // === CRITICAL STEP 1: REPLACE THIS WITH YOUR DEPLOYED CONTRACT ADDRESS ===
         // ==================================================================
-        const contractAddress = "0x94D68c1DBC0D256acbbca89ECac6ab45E4Aa7Da5";
+        const contractAddress = "0xb01674FeC93b32cA63c6D18994B00a2d1352D7eF";
         
         // ==================================================================
         // === CRITICAL STEP 2: REPLACE WITH YOUR PINATA JWT (SECRET ACCESS TOKEN) ===
         // ==================================================================
         const pinataJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiIyYzg0YjA4My1mZDFlLTRjMzMtYjFlMi0zNGNiNGNmMWMyMTMiLCJlbWFpbCI6ImNoZXJyeS42MzA1N0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiZDgyZmE2OTUyNTc0Y2ZkZmEzNTkiLCJzY29wZWRLZXlTZWNyZXQiOiI3NmIxOGRiNDY5ZmJkY2ZmY2I1ZjMzMzk0N2Q3OGNkMTNjNzQzMGY3MmU1NTg4NWQyMWIxOTdjYjk4N2ZiOTA5IiwiZXhwIjoxNzg2NzY2MzI3fQ.5ljGVpbw_ILhVxNrUjMPWXzD_UcIXkY7KVHkiqQC6_E';
         
-        // Remember to use the ABI from your updated contract with the 'ipfsCid' field
-        const abi = [[
+        // ==================================================================
+        // === CRITICAL STEP 3: THE FULL ABI IS PROVIDED FOR YOU BELOW     ===
+        // ==================================================================
+        const abi = [
 	{
 		"inputs": [
 			{
@@ -618,7 +620,7 @@
 		"stateMutability": "view",
 		"type": "function"
 	}
-]];
+];
 
         // --- Helper function for transaction feedback ---
         function setButtonProcessing(buttonId, isProcessing) {
@@ -642,16 +644,19 @@
         async function connectWallet() {
             if (!window.ethereum) return showNotification("Please install MetaMask to use this DApp.", true);
             try {
+                // Check for placeholder values before attempting to connect
+                if (contractAddress === "0xYOUR_NEW_SMART_CONTRACT_ADDRESS" || abi.length === 0) {
+                    return showNotification("Error: Smart Contract Address or ABI is not set in the code.", true);
+                }
+
                 web3 = new Web3(window.ethereum);
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 account = accounts[0];
-                if (contractAddress === "0xYOUR_NEW_SMART_CONTRACT_ADDRESS") {
-                    return showNotification("Error: Smart Contract Address is not set in the code.", true);
-                }
+                
                 contract = new web3.eth.Contract(abi, contractAddress);
-                const connectedAddressDisplay = await getEnsName(account) || account;
+                const connectedAddressDisplay = await getEnsName(account) || `${account.substring(0, 6)}...${account.substring(38)}`;
                 document.getElementById("connectButton").innerText = "✅ Wallet Connected";
-                document.getElementById("status").innerHTML = `🟢 Connected: ${connectedAddressDisplay.substring(0, 15)}...`;
+                document.getElementById("status").innerHTML = `🟢 Connected: ${connectedAddressDisplay}`;
                 await checkUserRole();
                 await fetchIssuedCertificates();
             } catch (e) {
@@ -661,7 +666,6 @@
         
         async function getEnsName(address) {
             // This is a simplified placeholder as robust ENS support can be complex.
-            // For a full implementation, consider using the ethers.js library.
             return null; 
         }
 
@@ -773,7 +777,7 @@
         function showTab(tabName) { document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active')); document.getElementById(tabName).classList.add('active'); document.querySelector(`.tab-button[onclick="showTab('${tabName}')"]`).classList.add('active'); }
         async function checkUserRole() { if (!contract) return; try { contractOwner = await contract.methods.owner().call(); const isAdmin = account.toLowerCase() === contractOwner.toLowerCase(); document.getElementById('admin-tab').style.display = isAdmin ? 'block' : 'none'; } catch (e) { console.error("Could not check user role:", e.message); } }
         function showNotification(message, isError = false) { const n = document.getElementById('notification'); n.textContent = message; n.className = isError ? 'error' : ''; n.style.top = '20px'; setTimeout(() => { n.style.top = '-100px'; }, 5000); }
-        async function generateHash() { const fi = document.getElementById("fileInput"); if (fi.files.length === 0) return; const f = fi.files[0]; showNotification("Hashing file..."); const ab = await f.arrayBuffer(); const hb = await crypto.subtle.digest("SHA-256", ab); const ha = Array.from(new Uint8Array(hb)); const hh = "0x" + ha.map(b => b.toString(16).padStart(2, "0")).join(""); document.getElementById("hashInput").value = hh; showNotification("📄 Hash generated successfully!", false); }
+        async function generateHash() { const fi = document.getElementById("fileInput"); if (fi.files.length === 0) return; const f = fi.files[0]; showNotification("Hashing file..."); const ab = await f.arrayBuffer(); const hb = await crypto.subtle.digest("SHA-26", ab); const ha = Array.from(new Uint8Array(hb)); const hh = "0x" + ha.map(b => b.toString(16).padStart(2, "0")).join(""); document.getElementById("hashInput").value = hh; showNotification("📄 Hash generated successfully!", false); }
         function addToBatch() { const rn = document.getElementById("batchRecipientName").value; const ct = document.getElementById("batchCourseTitle").value; const h = document.getElementById("batchHash").value; const g = document.getElementById("batchGrade").value; if (!rn || !ct || !h || g === '') return showNotification("Please fill all fields for the batch item.", true); batchToIssue.push({ recipientName: rn, courseTitle: ct, hash: h, grade: g }); renderBatchTable(); document.getElementById("batchRecipientName").value = ''; document.getElementById("batchCourseTitle").value = ''; document.getElementById("batchHash").value = ''; document.getElementById("batchGrade").value = ''; }
         function renderBatchTable() { const tb = document.querySelector("#batch-table tbody"); tb.innerHTML = ""; batchToIssue.forEach((item, index) => { const row = tb.insertRow(); row.innerHTML = `<td>${item.recipientName}</td><td>${item.courseTitle}</td><td style="font-size:10px; word-break:break-all;">${item.hash.substring(0,10)}...</td><td>${item.grade}</td><td><button class="remove-btn" onclick="removeFromBatch(${index})">X</button></td>`; }); }
         function removeFromBatch(index) { batchToIssue.splice(index, 1); renderBatchTable(); }
