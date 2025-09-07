@@ -1,251 +1,1339 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Certificate Registry DApp — Pro (Blockchain)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Certificate Registry DApp — Pro (On-chain + Bulk)</title>
 
-  <!-- Web3 + CSV Parser -->
-  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode/minified/html5-qrcode.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
-  <style>
-    body {
-      font-family: 'Space Grotesk', sans-serif;
-      background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-      color: #fff;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-    }
-    h1 { padding: 20px; font-size: 2.2em; }
-    nav { display: flex; justify-content: center; background:#111; }
-    nav button {
-      background: transparent; border:none; color:#fff; padding:12px 18px;
-      cursor:pointer; font-size:1em; transition:0.3s;
-    }
-    nav button:hover,nav button.active { background:#333; border-radius:6px; }
-    section { display:none; padding:20px; }
-    section.active { display:block; }
-    input,button {
-      margin:8px; padding:10px; border-radius:6px; border:none;
-      font-size:1em;
-    }
-    button { cursor:pointer; background:#2196f3; color:#fff; transition:0.3s; }
-    button:hover { background:#0b79d0; }
-    .card {
-      background:#1e1e1e; margin:12px auto; padding:16px; border-radius:12px;
-      max-width:600px; box-shadow:0 0 12px rgba(0,0,0,0.4);
-    }
-    #localStorageDisplay { margin-top:20px; }
-    .cert-entry { background:#2a2a2a; padding:10px; border-radius:8px; margin:6px 0; word-wrap:break-word; }
-  </style>
+<style>
+:root{
+  --bg-1:#071A2B; --bg-2:#0E2B44;
+  --card: rgba(255,255,255,0.04);
+  --muted: rgba(255,255,255,0.78);
+  --accent-yellow:#ffd24a; --accent-yellow-2:#ffcf3b;
+  --danger:#ff6b6b; --success:#4ade80;
+}
+/* --- THEME BUTTON WORKING: Light Theme Added --- */
+:root.light {
+  --bg-1: #f0f4f8; --bg-2: #ffffff;
+  --card: rgba(0,0,0,0.04);
+  --muted: #333;
+  --accent-yellow: #f59e0b; --accent-yellow-2: #d97706;
+  --danger:#ef4444; --success:#22c55e;
+}
+.light h1, .light .tab.active, .light strong, .light .btn-yellow, .light #walletStatus { color: #1e293b; }
+.light .subtitle, .light label, .light .mini, .light .footer, .light .tab { color: #475569; }
+.light input, .light select, .light textarea { background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.1); color: #1e293b; }
+.light .qr-badge { background: #e2e8f0; }
+.light .card { background: linear-gradient(180deg,rgba(255,255,255,0.8), #fff); border-color: rgba(0,0,0,0.08); }
+.light .controls .btn, .light .small-btn { background: rgba(0,0,0,0.06); color: #1e293b; }
+.light #liveConsole { color: #334155; }
+/* --- End of Light Theme styles --- */
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:'Space Grotesk',system-ui,Segoe UI,Roboto,sans-serif;color:var(--muted);background:linear-gradient(180deg,var(--bg-1),var(--bg-2));-webkit-font-smoothing:antialiased}
+header{padding:18px 14px;text-align:center}
+h1{margin:0;color:#fff;font-family:'Fredoka One',cursive;font-size:30px}
+.subtitle{color:rgba(255,255,255,0.75);margin-top:6px;font-size:13px}
+
+.top-controls{display:flex;gap:12px;justify-content:center;align-items:center;margin-top:12px;flex-wrap:wrap}
+.btn{border:0;cursor:pointer;border-radius:12px;padding:10px 14px;font-weight:700}
+.btn-yellow{background:linear-gradient(180deg,var(--accent-yellow),var(--accent-yellow-2));color:#0b2735}
+.btn-pill{background:#fff;color:#0b2740;padding:8px 12px;border-radius:20px}
+.status{margin-top:8px;color:#ffd;font-weight:600;font-size:13px}
+
+main{max-width:1150px;margin:16px auto;padding:0 12px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.06);box-shadow:0 18px 40px rgba(0,0,0,0.35)}
+.tabs{display:flex;gap:8px;padding:8px;border-radius:12px;margin-bottom:12px}
+.tab{flex:1;text-align:center;padding:12px;border-radius:12px;cursor:pointer;background:rgba(255,255,255,0.03);color:#cfe6ff;font-weight:700}
+.tab.active{background:rgba(255,255,255,0.06);color:#fff}
+
+.grid{display:grid;grid-template-columns:1fr 420px;gap:14px;align-items:start}
+@media (max-width:960px){ .grid{grid-template-columns:1fr} }
+
+.field{background:var(--card);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);color:var(--muted);margin-bottom:10px}
+label{display:block;font-size:13px;margin-bottom:8px;color:rgba(255,255,255,0.9)}
+input[type="text"], input[type="date"], input[type="file"], select, textarea {
+  width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#fff;
+}
+textarea{min-height:70px;resize:vertical}
+
+.iframe-preview{width:100%;height:280px;border-radius:8px;border:0;background:#fff;display:none}
+
+.qr-area{display:flex;gap:12px;align-items:center;flex-direction:column}
+.qr-badge{padding:12px;background:#0b1b2b;border-radius:12px;border:1px solid rgba(255,255,255,0.035);box-shadow:0 10px 20px rgba(0,0,0,0.45)}
+canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
+
+.controls{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.controls .btn{font-size:14px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,0.06);color:#fff}
+
+.issued-list{margin-top:12px;max-height:300px;overflow:auto;border-radius:8px;padding:10px;background:rgba(255,255,255,0.02)}
+.issued-item{padding:8px;border-radius:8px;margin-bottom:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);font-size:13px}
+.mini{font-size:12px;color:rgba(255,255,255,0.75)}
+.small{font-size:12px}
+.flex{display:flex;gap:8px;align-items:center}
+.right{margin-left:auto}
+
+#reader{width:100%;max-width:420px;margin-top:12px;border-radius:8px;overflow:hidden;background:#07121a}
+
+.footer{margin-top:14px;text-align:center;color:rgba(255,255,255,0.6);font-size:13px}
+
+/* toast */
+.toast{position:fixed;right:18px;bottom:18px;background:rgba(0,0,0,0.85);padding:10px 14px;border-radius:10px;color:#fff;display:none;z-index:9999}
+.table{width:100%;border-collapse:collapse;margin-top:8px}
+.table th,.table td{border-bottom:1px solid rgba(255,255,255,0.04);padding:8px;text-align:left;font-size:13px}
+.small-btn{padding:6px 8px;border-radius:8px;border:0;cursor:pointer;background:rgba(255,255,255,0.05);color:#fff}
+.file-input{padding:6px 0}
+</style>
 </head>
 <body>
+<header>
   <h1>Certificate Registry DApp — Pro</h1>
-  <nav>
-    <button onclick="showTab('issue')">Issue</button>
-    <button onclick="showTab('verify')">Verify</button>
-    <button onclick="showTab('revoke')">Revoke</button>
-    <button onclick="showTab('institution')">Institution</button>
-  </nav>
+  <div class="subtitle">Issue • Verify • Revoke • Bulk Issuance • QR • Local History</div>
 
-  <!-- Issue -->
-  <section id="issue" class="active">
-    <div class="card">
-      <h2>Issue Certificate</h2>
-      <input type="file" id="issueFile" />
-      <input type="text" id="studentAddress" placeholder="Student Wallet Address" />
-      <button onclick="issueCertificate()">Issue</button>
-      <p id="issueResult"></p>
+  <div class="top-controls">
+    <button id="connectBtn" class="btn btn-yellow">🔗 Connect Wallet</button>
+    <button id="themeBtn" class="btn btn-pill">🌗 Theme</button>
+  </div>
+  <div id="walletStatus" class="status">🧭 Wallet not connected</div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="tabs" role="tablist">
+      <div class="tab active" data-tab="issue">Issue</div>
+      <div class="tab" data-tab="verify">Verify</div>
+      <div class="tab" data-tab="revoke">Revoke</div>
+      <div class="tab" data-tab="institution">Institution (Single / CSV)</div>
     </div>
-  </section>
 
-  <!-- Verify -->
-  <section id="verify">
-    <div class="card">
-      <h2>Verify Certificate</h2>
-      <input type="number" id="verifyTokenId" placeholder="Token ID" />
-      <button onclick="verifyCertificate()">Verify</button>
-      <p id="verifyResult"></p>
-    </div>
-  </section>
+    <div class="grid">
+      <div>
+        <div id="panel-issue" class="panel">
+          <div class="field">
+            <label>Upload Certificate (PDF) — Preview & SHA-256 Hash</label>
+            <input id="fileInput" type="file" accept="application/pdf" class="file-input"/>
+            <iframe id="pdfPreview" class="iframe-preview"></iframe>
+            <div style="margin-top:10px" class="flex">
+              <button id="genHashBtn" class="btn">📄 Generate Hash</button>
+              <button id="issueBtn" class="btn" style="background:var(--accent-yellow);color:#072;font-weight:800">✅ Issue On-Chain</button>
+              <div class="right mini" id="issueStatus"></div>
+            </div>
+          </div>
 
-  <!-- Revoke -->
-  <section id="revoke">
-    <div class="card">
-      <h2>Revoke Certificate</h2>
-      <input type="number" id="revokeTokenId" placeholder="Token ID" />
-      <button onclick="revokeCertificate()">Revoke</button>
-      <p id="revokeResult"></p>
-    </div>
-  </section>
+          <div class="field" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+            <div><label>Student Name</label><input id="studentName" type="text" placeholder="e.g., A. Sharma" /></div>
+            <div><label>Course / Program</label><input id="courseName" type="text" placeholder="e.g., Blockchain Fundamentals" /></div>
+            <div><label>Institution</label><input id="institutionName" type="text" placeholder="e.g., ABC Institute" /></div>
+            <div><label>Grade (0-255)</label><input id="grade" type="text" placeholder="e.g., 85" /></div>
+            <div><label>Issue Date</label><input id="issueDate" type="date" /></div>
+          </div>
 
-  <!-- Institution -->
-  <section id="institution">
-    <div class="card">
-      <h2>Institution — Manual Entry</h2>
-      <div id="manualEntries">
-        <input type="file" class="manualFile" />
-        <input type="text" class="manualStudent" placeholder="Student Wallet Address" />
+          <div class="field">
+            <label>Certificate Hash (0x...)</label>
+            <input id="hashInput" type="text" placeholder="0x..." />
+            <div class="controls">
+              <button id="copyLinkBtn" class="btn">📋 Copy Verify Link</button>
+              <button id="downloadQRBtn" class="btn">⬇️ Download QR</button>
+              <button id="shareQRBtn" class="btn">📤 Share QR</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <strong style="color:#fff">📝 Local History</strong>
+            <div id="issuedList" class="issued-list mini"></div>
+          </div>
+        </div>
+
+        <div id="panel-verify" class="panel" style="display:none">
+          <div class="field">
+            <label>Enter Certificate Hash</label>
+            <input id="verifyHash" type="text" placeholder="0x..." />
+            <div style="margin-top:8px" class="flex">
+              <button id="verifyBtn" class="btn">🔍 Verify On-Chain</button>
+              <div class="right mini" id="verifyStatus"></div>
+            </div>
+            <pre id="verifyResult" class="mini" style="white-space:pre-wrap;margin-top:8px"></pre>
+          </div>
+        </div>
+
+        <div id="panel-revoke" class="panel" style="display:none">
+          <div class="field">
+            <label>Certificate Hash to Revoke</label>
+            <input id="revokeHash" type="text" placeholder="0x..." />
+            <div style="margin-top:8px" class="flex">
+              <button id="revokeBtn" class="btn" style="background:var(--danger);color:#fff">❌ Revoke On-Chain</button>
+              <div class="right mini" id="revokeStatus"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="panel-institution" class="panel" style="display:none">
+          <div class="field">
+            <label>Add Single Student (manual)</label>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+              <input id="inst_name" type="text" placeholder="Student name"/>
+              <input id="inst_course" type="text" placeholder="Course"/>
+              <input id="inst_institution" type="text" placeholder="Institution"/>
+              <input id="inst_grade" type="text" placeholder="Grade (0-255)"/>
+              <input id="inst_date" type="date"/>
+              <input id="inst_fileInput" type="file" accept="application/pdf" class="file-input" style="grid-column: span 2;"/>
+            </div>
+            <div style="margin-top:8px" class="flex">
+              <button id="inst_generate" class="btn">Generate Random Hash</button>
+              <button id="inst_issue_single" class="btn" style="background:var(--accent-yellow);color:#072">Issue On-Chain</button>
+              <div class="right mini" id="instStatus"></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Bulk CSV Upload (CSV columns: name,course,institution,grade,date)</label>
+            <input id="csvInput" type="file" accept=".csv" class="file-input"/>
+            <div style="margin-top:8px" class="flex">
+              <button id="csvGenerateHashesBtn" class="btn">📄 Generate Hashes from CSV</button>
+              <button id="csvIssueAllBtn" class="btn" style="background:var(--accent-yellow);color:#072">✅ Issue All On-Chain</button>
+            </div>
+            <div id="csvPreview" style="margin-top:10px; max-height: 150px; overflow-y: auto;" class="mini"></div>
+          </div>
+        </div>
+
       </div>
-      <button onclick="addManualEntry()">Add Another</button>
-      <button onclick="issueManualCertificates()">Issue All</button>
-    </div>
 
-    <div class="card">
-      <h2>Institution — CSV Upload</h2>
-      <input type="file" id="csvFile" accept=".csv" />
-      <button onclick="uploadCSV()">Upload & Issue</button>
-      <p>(CSV format: Student,TokenURI)</p>
-    </div>
+      <div>
+        <div class="qr-area">
+          <div class="qr-badge">
+            <canvas id="qrCanvas" class="qr" width="220" height="220"></canvas>
+          </div>
 
-    <div id="localStorageDisplay" class="card">
-      <h2>Issued Certificates (Local Storage)</h2>
-      <div id="issuedList"></div>
-    </div>
-  </section>
+          <div style="width:100%" class="mini">
+            <div style="display:flex;gap:8px">
+              <div style="flex:1"><strong style="color:#fff">Quick Actions</strong></div>
+              <div style="flex:1;text-align:right" id="networkLabel" class="mini"></div>
+            </div>
 
-  <script>
-    // Contract config
-    const contractAddress = "0x17f405356cc1101E1e04f31901d4eAcaaBb7A0C4";
-    const contractABI =  /* PASTE ABI ARRAY HERE */ 
-    [
-      // full ABI you pasted (kept inside array)
-      {
-        "inputs":[{"internalType":"address","name":"issuer","type":"address"}],
-        "name":"addIssuer","outputs":[],"stateMutability":"nonpayable","type":"function"
-      },
-      {
-        "inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],
-        "name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"
-      },
-      {"inputs":[],"stateMutability":"nonpayable","type":"constructor"},
-      {"inputs":[{"internalType":"address","name":"student","type":"address"},{"internalType":"string","name":"tokenURI","type":"string"}],
-       "name":"issueCredential","outputs":[],"stateMutability":"nonpayable","type":"function"},
-      {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],
-       "name":"revokeCredential","outputs":[],"stateMutability":"nonpayable","type":"function"},
-      {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],
-       "name":"verifyCredential","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
-      {"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],
-       "name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},
-      // ... keep rest of ABI functions/events exactly as you pasted
-    ];
+            <div style="margin-top:10px" class="mini">
+              Generate a certificate hash, then Issue on-chain (writes hash & metadata). Use Institution tab for CSV/batch issuance.
+            </div>
+          </div>
+        </div>
 
-    let web3, contract, accounts;
+        <div class="field" style="margin-top:12px">
+          <strong style="color:#fff">Live Console</strong>
+          <div id="liveConsole" class="mini" style="margin-top:8px;max-height:200px;overflow:auto"></div>
+        </div>
+      </div>
+    </div> </div> <div class="card" style="margin-top:14px">
+    <strong>All Issued Certificates (local)</strong>
+    <div id="historyTable" style="margin-top:8px" class="mini"></div>
+  </div>
 
-    async function init() {
-      if (window.ethereum) {
-        web3 = new Web3(window.ethereum);
-        await window.ethereum.request({ method: "eth_requestAccounts" });
-        accounts = await web3.eth.getAccounts();
-        contract = new web3.eth.Contract(contractABI, contractAddress);
-      } else {
-        alert("Please install MetaMask!");
-      }
-      loadLocalStorage();
+  <div class="footer">Tip: Save as <code>index.html</code>, open in Chrome, allow wallet permissions.</div>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* =========================
+   Contract address + ABI (provided)
+   ========================= */
+const contractAddress = "0x17f405356cc1101E1e04f31901d4eAcaaBb7A0C4";
+const contractABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "issuer",
+				"type": "address"
+			}
+		],
+		"name": "addIssuer",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "ERC721IncorrectOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "ERC721InsufficientApproval",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "approver",
+				"type": "address"
+			}
+		],
+		"name": "ERC721InvalidApprover",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			}
+		],
+		"name": "ERC721InvalidOperator",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "ERC721InvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "receiver",
+				"type": "address"
+			}
+		],
+		"name": "ERC721InvalidReceiver",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			}
+		],
+		"name": "ERC721InvalidSender",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "ERC721NonexistentToken",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "student",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "tokenURI",
+				"type": "string"
+			}
+		],
+		"name": "issueCredential",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "OwnableInvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "OwnableUnauthorizedAccount",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "approved",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "approved",
+				"type": "bool"
+			}
+		],
+		"name": "ApprovalForAll",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "_fromTokenId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "_toTokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "BatchMetadataUpdate",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "_tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "MetadataUpdate",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "previousOwner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "OwnershipTransferred",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "issuer",
+				"type": "address"
+			}
+		],
+		"name": "removeIssuer",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "revokeCredential",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "safeTransferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "data",
+				"type": "bytes"
+			}
+		],
+		"name": "safeTransferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "approved",
+				"type": "bool"
+			}
+		],
+		"name": "setApprovalForAll",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "Transfer",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "authorizedIssuers",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "getApproved",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			}
+		],
+		"name": "isApprovedForAll",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "nextTokenId",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "ownerOf",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "revoked",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes4",
+				"name": "interfaceId",
+				"type": "bytes4"
+			}
+		],
+		"name": "supportsInterface",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "symbol",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "tokenURI",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "verifyCredential",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+
+/* =========================
+   App State
+   ========================= */
+let web3, contract, account;
+const LS_KEY = 'certs_v3_local';
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+
+/* =========================
+   Utils: Toast + console
+   ========================= */
+function showToast(msg, timeout=3500){
+  const t = $('#toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(()=> t.style.display='none', timeout);
+}
+function logLive(msg){
+  const el = $('#liveConsole');
+  const time = new Date().toLocaleTimeString();
+  el.innerText = `[${time}] ${msg}\n` + el.innerText;
+}
+
+/* =========================
+   Theme
+   ========================= */
+$('#themeBtn').addEventListener('click', ()=>{
+  document.documentElement.classList.toggle('light');
+  const val = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+  localStorage.setItem('dapp_theme', val);
+});
+(function initTheme(){ const v = localStorage.getItem('dapp_theme') || 'dark'; if(v==='light') document.documentElement.classList.add('light'); })();
+
+/* =========================
+   Tabs
+   ========================= */
+$$('.tab').forEach(t=> t.addEventListener('click', () => {
+  $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  $$('.panel').forEach(p=>p.style.display='none');
+  document.getElementById('panel-' + t.dataset.tab).style.display = 'block';
+}));
+
+/* expose panels as elements so .panel selection works */
+document.querySelectorAll('.tab').forEach(t => t.classList.contains('active') ? null : null);
+document.getElementById('panel-issue').style.display = 'block';
+
+/* =========================
+   Wallet connect
+   ========================= */
+$('#connectBtn').addEventListener('click', async ()=>{
+  if(!window.ethereum){ alert('Please install MetaMask'); return; }
+  try {
+    web3 = new Web3(window.ethereum);
+    const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    account = accs[0];
+    contract = new web3.eth.Contract(contractABI, contractAddress);
+    $('#connectBtn').innerText = '✅ Connected';
+    $('#walletStatus').innerText = '🟢 Connected: ' + account;
+    const netId = await web3.eth.net.getId();
+    $('#networkLabel').innerText = 'Network: ' + netId;
+    logLive('Wallet connected: ' + account);
+    window.ethereum.on('accountsChanged', (accs)=> { account = accs[0]; $('#walletStatus').innerText = '🟢 Connected: ' + account; });
+    window.ethereum.on('chainChanged', ()=> location.reload());
+    renderIssued();
+  } catch(e){
+    console.error(e); showToast('Wallet connection failed: ' + (e.message||e)); logLive('Connect failed: ' + (e.message||e));
+  }
+});
+
+/* =========================
+   SHA256 Hash generation (PDF)
+   ========================= */
+$('#genHashBtn').addEventListener('click', async ()=>{
+  const file = $('#fileInput').files[0];
+  if(!file) return alert('Please select a PDF first.');
+  try {
+    // preview
+    $('#pdfPreview').src = URL.createObjectURL(file);
+    $('#pdfPreview').style.display = 'block';
+    const ab = await file.arrayBuffer();
+    const digest = await crypto.subtle.digest('SHA-256', ab);
+    const arr = Array.from(new Uint8Array(digest));
+    const hex = '0x' + arr.map(b=>b.toString(16).padStart(2,'0')).join('');
+    $('#hashInput').value = hex;
+    drawQRCode(hex);
+    setMini('issueStatus','Hash generated');
+    logLive('Hash generated: ' + hex);
+  } catch(e){ console.error(e); showToast('Hash error'); }
+});
+
+function setMini(id, txt){ const el=document.getElementById(id); if(el) el.innerText = txt; }
+
+/* =========================
+   Draw QR
+   ========================= */
+function drawQRCode(text){
+  if(!text) return;
+  try { QRCode.toCanvas($('#qrCanvas'), text, { width:220, margin:1 }, err => { if(err) console.error(err); }); } catch(e){ console.error(e); }
+}
+
+/* mirror hash to other inputs */
+$('#hashInput').addEventListener('input', (e)=> {
+  const v=e.target.value.trim();
+  if(/^0x[0-9a-fA-F]{64}$/.test(v)){ $('#verifyHash').value=v; $('#revokeHash').value=v; drawQRCode(v); }
+});
+
+/* =========================
+   Local Storage helpers
+   ========================= */
+function getLocal(){ try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]')}catch{return []} }
+function saveLocal(entry){ const arr=getLocal(); arr.unshift(entry); localStorage.setItem(LS_KEY, JSON.stringify(arr.slice(0,1000))); }
+function renderIssued(){
+  const items = getLocal();
+  const container = $('#issuedList');
+  container.innerHTML = '';
+  if(!items.length){ container.innerHTML = '<div class="mini">No local records yet</div>'; renderHistoryTable(); return; }
+  items.forEach(it=>{
+    const div = document.createElement('div'); div.className='issued-item';
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong style="color:#fff">${it.name||'—'}</strong><div class="mini">${it.course||'—'} • ${it.institution||'—'}</div></div>
+        <div class="mini">${new Date(it.ts||Date.now()).toLocaleString()}</div>
+      </div>
+      <div class="mini" style="margin-top:8px;word-break:break-all">${it.hash}</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="small-btn" data-act="copy" data-h="${it.hash}">Copy Link</button>
+        <button class="small-btn" data-act="qr" data-h="${it.hash}">Show QR</button>
+        <button class="small-btn" data-act="verify" data-h="${it.hash}">Verify</button>
+        <button class="small-btn" data-act="revoke" data-h="${it.hash}">Revoke</button>
+      </div>
+      <div class="mini" style="margin-top:6px">${it.txHash?('tx:'+it.txHash):''}${it.revoked?(' • REVOKED'):''}</div>
+    `;
+    container.appendChild(div);
+  });
+
+  // attach handlers
+  container.querySelectorAll('button').forEach(b=>{
+    b.onclick = async (ev) => {
+      const act = ev.currentTarget.dataset.act;
+      const h = ev.currentTarget.dataset.h;
+      if(act==='copy'){ navigator.clipboard.writeText(buildVerifyURL(h)); showToast('Link copied'); }
+      else if(act==='qr'){ $('#hashInput').value=h; drawQRCode(h); }
+      else if(act==='verify'){ $('#verifyHash').value=h; $$('.tab').forEach(t=>t.classList.remove('active')); document.querySelector('.tab[data-tab=\"verify\"]').classList.add('active'); $$('.panel').forEach(p=>p.style.display='none'); document.getElementById('panel-verify').style.display='block'; $('#verifyBtn').click(); }
+      else if(act==='revoke'){ $('#revokeHash').value=h; $$('.tab').forEach(t=>t.classList.remove('active')); document.querySelector('.tab[data-tab=\"revoke\"]').classList.add('active'); $$('.panel').forEach(p=>p.style.display='none'); document.getElementById('panel-revoke').style.display='block'; $('#revokeBtn').click(); }
+    };
+  });
+
+  renderHistoryTable();
+}
+
+/* history table (bottom) */
+function renderHistoryTable(){
+  const items=getLocal();
+  const container = $('#historyTable'); if(!items.length){ container.innerHTML='<div class="mini">No history</div>'; return; }
+  let html = '<table class="table"><thead><tr><th>When</th><th>Recipient</th><th>Course</th><th>Hash</th><th>Actions</th></tr></thead><tbody>';
+  items.forEach(it=>{
+    html += `<tr><td>${new Date(it.ts||Date.now()).toLocaleString()}</td><td>${it.name||'—'}</td><td>${it.course||'—'}</td><td style="word-break:break-all">${it.hash}</td>
+      <td><button class="small-btn" onclick="navigator.clipboard.writeText('${buildVerifyURL(it.hash)}')">Copy</button>
+          <button class="small-btn" onclick="document.getElementById('hashInput').value='${it.hash}'; drawQRCode('${it.hash}')">QR</button>
+          <button class="small-btn" onclick="document.getElementById('verifyHash').value='${it.hash}'; document.querySelector('.tab[data-tab=verify]').click(); setTimeout(()=>document.getElementById('verifyBtn').click(),400)">Verify</button></td></tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+/* =========================
+   Build verify link
+   ========================= */
+function buildVerifyURL(hash){ return location.origin + location.pathname + '?certHash=' + encodeURIComponent(hash); }
+
+/* =========================
+   Issue On-chain (single)
+   - Ensures numeric values converted to strings to avoid BigInt mixing
+   ========================= */
+$('#issueBtn').addEventListener('click', async ()=>{
+  if(!contract || !account){ showToast('Connect wallet first'); return; }
+  const hash = $('#hashInput').value.trim();
+  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){ alert('Hash must be 0x + 64 hex chars. Generate from PDF.'); return; }
+  const recipient = $('#studentName').value.trim() || '—';
+  const course = $('#courseName').value.trim() || '—';
+  const institution = $('#institutionName').value.trim() || '—';
+  let grade = parseInt($('#grade').value,10); if(Number.isNaN(grade)) grade = 0; if(grade < 0) grade = 0; if(grade > 255) grade = 255;
+  const ipfsCid = ""; // optional, not used
+  try {
+    setMini('issueStatus','Sending tx...');
+    logLive('Issuing certificate: ' + hash);
+    // BigInt-safe: convert numeric to string before sending arrays / params where mixing happens.
+    // web3 accepts numbers, but to avoid BigInt mixing we pass grade as Number (safe) and strings for other params.
+    const gas = await contract.methods.issueCertificate(hash, recipient, course, grade, ipfsCid).estimateGas({ from: account });
+    const tx = await contract.methods.issueCertificate(hash, recipient, course, grade, ipfsCid).send({ from: account, gas: Math.floor(gas * 1.2) });
+    showToast('Issued on-chain: ' + tx.transactionHash, 5000);
+    setMini('issueStatus','Issued: ' + tx.transactionHash);
+    const meta = { hash, name: recipient, course, institution, grade, ts: Date.now(), txHash: tx.transactionHash };
+    saveLocal(meta); renderIssued();
+    logLive('Issue tx: ' + tx.transactionHash);
+  } catch(e){ console.error(e); showToast('Issue failed: ' + (e.message||e)); setMini('issueStatus','Error'); logLive('Issue failed: ' + (e.message||e)); }
+});
+
+/* =========================
+   Verify (getCertificateDetails)
+   ========================= */
+$('#verifyBtn').addEventListener('click', async ()=>{
+  if(!contract){ showToast('Connect wallet to verify (calls node)'); return; }
+  const hash = $('#verifyHash').value.trim();
+  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){ alert('Enter 0x + 64 hex chars'); return; }
+  try {
+    setMini('verifyStatus','Checking...');
+    logLive('Verifying: ' + hash);
+    const details = await contract.methods.getCertificateDetails(hash).call();
+    // fields: issuer, issueDate (uint256), isValid, recipientName, courseTitle, grade, ipfsCid
+    const issuer = details.issuer || details[0];
+    const issueDate = Number(details.issueDate || details[1] || 0);
+    const isValid = (details.isValid !== undefined) ? details.isValid : details[2];
+    const recipientName = details.recipientName || details[3] || '';
+    const courseTitle = details.courseTitle || details[4] || '';
+    const grade = (details.grade !== undefined) ? details.grade : details[5];
+    const ipfsCid = details.ipfsCid || details[6] || '';
+    const validText = isValid ? '✅ VALID (on-chain)' : '❌ NOT VALID';
+    const issueWhen = issueDate ? new Date(issueDate * 1000).toLocaleString() : '—';
+    const out = `${validText}\nIssuer: ${issuer}\nIssued: ${issueWhen}\nRecipient: ${recipientName}\nCourse: ${courseTitle}\nGrade: ${grade}\nIPFS CID: ${ipfsCid}`;
+    $('#verifyResult').innerText = out;
+    setMini('verifyStatus','Done');
+    logLive('Verify result shown');
+  } catch(e){ console.error(e); showToast('Verify failed: ' + (e.message||e)); setMini('verifyStatus','Error'); logLive('Verify failed: ' + (e.message||e)); }
+});
+
+/* =========================
+   Revoke
+   ========================= */
+$('#revokeBtn').addEventListener('click', async ()=>{
+  if(!contract || !account){ showToast('Connect wallet'); return; }
+  const hash = $('#revokeHash').value.trim();
+  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){ alert('Enter 0x + 64 hex chars'); return; }
+  try {
+    setMini('revokeStatus','Sending revoke tx...');
+    logLive('Revoking: ' + hash);
+    const gas = await contract.methods.revokeCertificate(hash).estimateGas({ from: account });
+    const tx = await contract.methods.revokeCertificate(hash).send({ from: account, gas: Math.floor(gas * 1.2) });
+    showToast('Revoked: ' + tx.transactionHash);
+    // update local record if exists
+    const list = getLocal(); const idx = list.findIndex(i=>i.hash===hash);
+    if(idx>-1){ list[idx].revoked = true; list[idx].revokeTx = tx.transactionHash; localStorage.setItem(LS_KEY, JSON.stringify(list)); renderIssued(); }
+    setMini('revokeStatus','Revoked: ' + tx.transactionHash);
+    logLive('Revoke tx: ' + tx.transactionHash);
+  } catch(e){ console.error(e); showToast('Revoke failed: ' + (e.message||e)); setMini('revokeStatus','Error'); logLive('Revoke failed: ' + (e.message||e)); }
+});
+
+/* =========================
+   QR copy / download / share
+   ========================= */
+$('#copyLinkBtn').addEventListener('click', ()=>{ const h=$('#hashInput').value.trim(); if(!h){showToast('No hash');return;} navigator.clipboard.writeText(buildVerifyURL(h)); showToast('Link copied'); });
+$('#downloadQRBtn').addEventListener('click', ()=>{ const c = $('#qrCanvas'); const a=document.createElement('a'); a.download='certificate_qr.png'; a.href=c.toDataURL('image/png'); a.click(); });
+$('#shareQRBtn').addEventListener('click', ()=>{ const c = $('#qrCanvas'); c.toBlob(async blob => { const file = new File([blob],'certificate_qr.png',{type:'image/png'}); if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:'Certificate QR'}); } else showToast('Sharing not supported'); }); });
+
+/* --- QR SCANNING CODE REMOVED --- */
+
+/* =========================
+   Institution Single generate / issue
+   ========================= */
+$('#inst_generate').addEventListener('click', ()=>{
+  const name = $('#inst_name').value.trim();
+  const course = $('#inst_course').value.trim();
+  const institution = $('#inst_institution').value.trim();
+  const grade = parseInt($('#inst_grade').value,10) || 0;
+  const date = $('#inst_date').value || new Date().toISOString().split('T')[0];
+  const rand = crypto.getRandomValues(new Uint8Array(32));
+  const hash = '0x' + Array.from(rand).map(b=>b.toString(16).padStart(2,'0')).join('');
+  $('#hashInput').value = hash; drawQRCode(hash);
+  setMini('instStatus','Random hash generated');
+  showToast('Random hash generated for ' + (name||'student'));
+});
+$('#inst_issue_single').addEventListener('click', async ()=>{
+  // reuse issue flow but taking values from inst_ inputs and generated hash
+  $('#studentName').value = $('#inst_name').value;
+  $('#courseName').value = $('#inst_course').value;
+  $('#institutionName').value = $('#inst_institution').value;
+  $('#grade').value = $('#inst_grade').value;
+  $('#issueDate').value = $('#inst_date').value;
+  // ensure a hash exists in #hashInput
+  if(!$('#hashInput').value) { showToast('Generate a hash first (randomly or from file)'); return; }
+  // click issue button programmatically
+  $('#issueBtn').click();
+});
+
+/* --- NEW: Institution Single - File Hash --- */
+$('#inst_fileInput').addEventListener('change', async (event)=>{
+    const file = event.target.files[0];
+    if(!file) return;
+    try {
+        const ab = await file.arrayBuffer();
+        const digest = await crypto.subtle.digest('SHA-256', ab);
+        const arr = Array.from(new Uint8Array(digest));
+        const hex = '0x' + arr.map(b=>b.toString(16).padStart(2,'0')).join('');
+        $('#hashInput').value = hex;
+        drawQRCode(hex);
+        setMini('instStatus','Hash generated from file.');
+        logLive('Hash generated from institution file: ' + hex);
+    } catch(e){
+        console.error(e);
+        showToast('Hash generation error: ' + (e.message || e));
+        setMini('instStatus','File hash error.');
     }
+});
 
-    // Tabs
-    function showTab(tab) {
-      document.querySelectorAll("section").forEach(s => s.classList.remove("active"));
-      document.getElementById(tab).classList.add("active");
-      document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
-      document.querySelector(`nav button[onclick="showTab('${tab}')"]`).classList.add("active");
-    }
 
-    // Issue
-    async function issueCertificate() {
-      const file = document.getElementById("issueFile").files[0];
-      const student = document.getElementById("studentAddress").value.trim();
-      if (!file || !student) return alert("Upload file and enter student address!");
-      const tokenURI = URL.createObjectURL(file); // placeholder URI
-      await contract.methods.issueCredential(student, tokenURI).send({ from: accounts[0] });
-      document.getElementById("issueResult").innerText = "Issued to " + student;
-      saveToLocalStorage(tokenURI);
-    }
-
-    // Verify
-    async function verifyCertificate() {
-      const tokenId = document.getElementById("verifyTokenId").value.trim();
-      if (!tokenId) return alert("Enter token ID!");
-      const valid = await contract.methods.verifyCredential(tokenId).call();
-      let result = valid ? "✅ Valid" : "❌ Invalid/Revoked";
-      try {
-        const uri = await contract.methods.tokenURI(tokenId).call();
-        result += "\\nTokenURI: " + uri;
-      } catch(e){}
-      document.getElementById("verifyResult").innerText = result;
-    }
-
-    // Revoke
-    async function revokeCertificate() {
-      const tokenId = document.getElementById("revokeTokenId").value.trim();
-      if (!tokenId) return alert("Enter token ID!");
-      await contract.methods.revokeCredential(tokenId).send({ from: accounts[0] });
-      document.getElementById("revokeResult").innerText = "Revoked token " + tokenId;
-    }
-
-    // Manual Institution
-    function addManualEntry() {
-      const div = document.createElement("div");
-      div.innerHTML = '<input type="file" class="manualFile" /> <input type="text" class="manualStudent" placeholder="Student Wallet Address" />';
-      document.getElementById("manualEntries").appendChild(div);
-    }
-
-    async function issueManualCertificates() {
-      const files = document.querySelectorAll(".manualFile");
-      const students = document.querySelectorAll(".manualStudent");
-      for (let i=0; i<files.length; i++) {
-        if (files[i].files.length > 0 && students[i].value) {
-          const tokenURI = URL.createObjectURL(files[i].files[0]);
-          await contract.methods.issueCredential(students[i].value.trim(), tokenURI).send({ from: accounts[0] });
-          saveToLocalStorage(tokenURI);
+/* =========================
+   CSV parse & bulk actions (MODIFIED)
+   ========================= */
+let csvRows = [];
+$('#csvGenerateHashesBtn').addEventListener('click', async ()=>{
+    const file = $('#csvInput').files[0];
+    if(!file) return alert('Choose CSV file');
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+    let start = 0; const headers = lines[0].split(',').map(h=>h.trim().toLowerCase());
+    const hasHeader = headers.some(h=>['name','course','institution','grade','date'].includes(h));
+    if(hasHeader){ start = 1; }
+    
+    csvRows = []; // Reset
+    for(let i=start;i<lines.length;i++){
+        const cols = lines[i].split(',').map(c=>c.trim());
+        let rowData = {};
+        if(hasHeader){
+            const obj = {};
+            headers.forEach((h, idx)=> obj[h]=cols[idx]||'');
+            rowData = {
+                name: obj.name || obj.recipient || '—',
+                course: obj.course || obj.coursetitle || '—',
+                institution: obj.institution || '—',
+                grade: parseInt(obj.grade,10) || 0,
+                date: obj.date || new Date().toISOString().split('T')[0]
+            };
+        } else {
+            rowData = {
+                name: cols[0]||'—',
+                course: cols[1]||'—',
+                institution: cols[2]||'—',
+                grade: parseInt(cols[3],10) || 0,
+                date: cols[4] || new Date().toISOString().split('T')[0]
+            };
         }
-      }
-      alert("Manual certificates issued!");
+        // Generate and add hash
+        const rand = crypto.getRandomValues(new Uint8Array(32));
+        const hash = '0x' + Array.from(rand).map(b=>b.toString(16).padStart(2,'0')).join('');
+        rowData.hash = hash;
+        csvRows.push(rowData);
     }
 
-    // CSV Upload
-    function uploadCSV() {
-      const file = document.getElementById("csvFile").files[0];
-      if (!file) return alert("Upload a CSV!");
-      Papa.parse(file, {
-        header: true,
-        complete: async function(results) {
-          for (let row of results.data) {
-            if (row.Student && row.TokenURI) {
-              await contract.methods.issueCredential(row.Student.trim(), row.TokenURI.trim()).send({ from: accounts[0] });
-              saveToLocalStorage(row.TokenURI.trim());
-            }
-          }
-          alert("CSV Certificates Issued!");
+    let previewHtml = 'Generated Hashes for ' + csvRows.length + ' rows:<br>';
+    previewHtml += csvRows.slice(0, 5).map(r => `<strong>${r.name}</strong>: <span style="font-family:monospace; font-size:11px;">${r.hash.substring(0,22)}...</span>`).join('<br>');
+    if(csvRows.length > 5) previewHtml += '<br>...and more.';
+    $('#csvPreview').innerHTML = previewHtml;
+
+    showToast('Generated hashes for ' + csvRows.length + ' rows');
+    logLive('Generated hashes from CSV for ' + csvRows.length + ' rows.');
+});
+
+$('#csvIssueAllBtn').addEventListener('click', async ()=>{
+    if(!csvRows.length || !csvRows[0].hash) return alert('Please generate hashes from a CSV file first.');
+    if(!contract || !account) { showToast('Connect wallet first'); return; }
+    
+    try {
+        const hashes = csvRows.map(r => r.hash);
+        const names = csvRows.map(r => r.name || '—');
+        const courses = csvRows.map(r => r.course || '—');
+        const grades = csvRows.map(r => {
+            let g = parseInt(r.grade,10); if(Number.isNaN(g)) g = 0; if(g<0) g=0; if(g>255) g=255; return Number(g);
+        });
+        const ipfs = csvRows.map(() => '');
+
+        setMini('instStatus','Sending batch tx...');
+        logLive('Sending batchIssueCertificates for ' + hashes.length + ' certs');
+        const gas = await contract.methods.batchIssueCertificates(hashes, names, courses, grades, ipfs).estimateGas({ from: account });
+        const tx = await contract.methods.batchIssueCertificates(hashes, names, courses, grades, ipfs).send({ from: account, gas: Math.floor(gas * 1.3) });
+        showToast('Batch issued: ' + tx.transactionHash, 6000);
+        
+        for(let i=0;i<hashes.length;i++){
+            saveLocal({ hash: hashes[i], name: names[i], course: courses[i], institution: csvRows[i].institution, grade: grades[i], ts: Date.now(), txHash: tx.transactionHash });
         }
-      });
+        renderIssued();
+        setMini('instStatus','Batch tx: ' + tx.transactionHash);
+        logLive('Batch tx: ' + tx.transactionHash);
+    } catch(e){
+        console.error(e);
+        showToast('Batch issue failed: ' + (e.message||e));
+        setMini('instStatus','Error');
+        logLive('Batch issue failed: ' + (e.message||e));
     }
+});
+/* =========================
+   CSV helpers end
+   ========================= */
 
-    // Local Storage
-    function saveToLocalStorage(uri) {
-      let issued = JSON.parse(localStorage.getItem("issuedCerts") || "[]");
-      issued.push(uri);
-      localStorage.setItem("issuedCerts", JSON.stringify(issued));
-      loadLocalStorage();
-    }
+/* =========================
+   Deep-link auto verify
+   ========================= */
+(function autoVerifyFromURL(){
+  const p = new URLSearchParams(location.search);
+  const h = p.get('certHash');
+  if(h){
+    // switch to verify tab
+    $$('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelector('.tab[data-tab="verify"]').classList.add('active');
+    $$('.panel').forEach(p=>p.style.display='none');
+    document.getElementById('panel-verify').style.display='block';
+    $('#verifyHash').value = h;
+    drawQRCode(h);
+    setTimeout(()=> $('#verifyBtn').click(), 700);
+  }
+})();
 
-    function loadLocalStorage() {
-      let issued = JSON.parse(localStorage.getItem("issuedCerts") || "[]");
-      const list = document.getElementById("issuedList");
-      list.innerHTML = "";
-      issued.forEach(uri => {
-        const div = document.createElement("div");
-        div.className = "cert-entry";
-        div.innerText = uri;
-        list.appendChild(div);
-      });
-    }
+/* =========================
+   Init
+   ========================= */
+renderIssued();
+drawQRCode('Certificate Registry DApp');
+logLive('App initialized');
 
-    window.addEventListener("load", init);
-  </script>
+</script>
 </body>
 </html>
