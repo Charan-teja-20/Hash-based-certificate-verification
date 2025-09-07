@@ -19,7 +19,7 @@
   --accent-yellow:#ffd24a; --accent-yellow-2:#ffcf3b;
   --danger:#ff6b6b; --success:#4ade80;
 }
-/* --- THEME BUTTON WORKING: Light Theme Added --- */
+/* --- Light Theme Styles --- */
 :root.light {
   --bg-1: #f0f4f8; --bg-2: #ffffff;
   --card: rgba(0,0,0,0.04);
@@ -119,7 +119,7 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
           <div class="field">
             <label>Upload Certificate (PDF) — Preview & SHA-256 Hash</label>
             <input id="fileInput" type="file" accept="application/pdf" class="file-input"/>
-            <iframe id="pdfPreview" class="iframe-preview"></iframe>
+          _ <iframe id="pdfPreview" class="iframe-preview"></iframe>
             <div style="margin-top:10px" class="flex">
               <button id="genHashBtn" class="btn">📄 Generate Hash</button>
               <button id="issueBtn" class="btn" style="background:var(--accent-yellow);color:#072;font-weight:800">✅ Issue On-Chain</button>
@@ -240,7 +240,7 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
 
 <script>
 /* =========================
-   Contract address + ABI (UPDATED)
+   Contract address + ABI
    ========================= */
 const contractAddress = "0x17f405356cc1101E1e04f31901d4eAcaaBb7A0C4";
 const contractABI = [
@@ -948,7 +948,7 @@ $('#themeBtn').addEventListener('click', ()=>{
   const val = document.documentElement.classList.contains('light') ? 'light' : 'dark';
   localStorage.setItem('dapp_theme', val);
 });
-(function initTheme(){ const v = localStorage.getItem('dapp_theme') || 'dark'; if(v==='light') document.documentElement.classList.add('light'); })();
+(function initTheme(){ const v = localStorage.getItem('dapp_theme') || 'light'; if(v==='light') document.documentElement.classList.add('light'); })();
 
 /* =========================
    Tabs
@@ -959,7 +959,6 @@ $$('.tab').forEach(t=> t.addEventListener('click', () => {
   document.getElementById('panel-' + t.dataset.tab).style.display = 'block';
 }));
 
-/* expose panels as elements so .panel selection works */
 document.querySelectorAll('.tab').forEach(t => t.classList.contains('active') ? null : null);
 document.getElementById('panel-issue').style.display = 'block';
 
@@ -993,7 +992,6 @@ $('#genHashBtn').addEventListener('click', async ()=>{
   const file = $('#fileInput').files[0];
   if(!file) return alert('Please select a PDF first.');
   try {
-    // preview
     $('#pdfPreview').src = URL.createObjectURL(file);
     $('#pdfPreview').style.display = 'block';
     const ab = await file.arrayBuffer();
@@ -1017,7 +1015,6 @@ function drawQRCode(text){
   try { QRCode.toCanvas($('#qrCanvas'), text, { width:220, margin:1 }, err => { if(err) console.error(err); }); } catch(e){ console.error(e); }
 }
 
-/* mirror hash to other inputs */
 $('#hashInput').addEventListener('input', (e)=> {
   const v=e.target.value.trim();
   if(/^0x[0-9a-fA-F]{64}$/.test(v)){ $('#verifyHash').value=v; $('#revokeHash').value=v; drawQRCode(v); }
@@ -1052,7 +1049,6 @@ function renderIssued(){
     container.appendChild(div);
   });
 
-  // attach handlers
   container.querySelectorAll('button').forEach(b=>{
     b.onclick = async (ev) => {
       const act = ev.currentTarget.dataset.act;
@@ -1067,7 +1063,6 @@ function renderIssued(){
   renderHistoryTable();
 }
 
-/* history table (bottom) */
 function renderHistoryTable(){
   const items=getLocal();
   const container = $('#historyTable'); if(!items.length){ container.innerHTML='<div class="mini">No history</div>'; return; }
@@ -1166,8 +1161,6 @@ $('#copyLinkBtn').addEventListener('click', ()=>{ const h=$('#hashInput').value.
 $('#downloadQRBtn').addEventListener('click', ()=>{ const c = $('#qrCanvas'); const a=document.createElement('a'); a.download='certificate_qr.png'; a.href=c.toDataURL('image/png'); a.click(); });
 $('#shareQRBtn').addEventListener('click', ()=>{ const c = $('#qrCanvas'); c.toBlob(async blob => { const file = new File([blob],'certificate_qr.png',{type:'image/png'}); if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:'Certificate QR'}); } else showToast('Sharing not supported'); }); });
 
-/* --- QR SCANNING CODE REMOVED --- */
-
 /* =========================
    Institution Single generate / issue
    ========================= */
@@ -1181,7 +1174,6 @@ $('#inst_generate').addEventListener('click', ()=>{
 });
 
 $('#inst_issue_single').addEventListener('click', async ()=>{
-  // reuse issue flow but taking values from inst_ inputs and generated hash
   $('#studentName').value = $('#inst_name').value;
   $('#courseName').value = $('#inst_course').value;
   $('#institutionName').value = $('#inst_institution').value;
@@ -1191,7 +1183,6 @@ $('#inst_issue_single').addEventListener('click', async ()=>{
   $('#issueBtn').click();
 });
 
-/* --- NEW: Institution Single - File Hash --- */
 $('#inst_fileInput').addEventListener('change', async (event)=>{
     const file = event.target.files[0];
     if(!file) return;
@@ -1213,7 +1204,7 @@ $('#inst_fileInput').addEventListener('change', async (event)=>{
 
 
 /* =========================
-   CSV parse & bulk actions (MODIFIED)
+   CSV parse & bulk actions
    ========================= */
 let csvRows = [];
 $('#csvGenerateHashesBtn').addEventListener('click', async ()=>{
@@ -1248,7 +1239,6 @@ $('#csvGenerateHashesBtn').addEventListener('click', async ()=>{
                 date: cols[4] || new Date().toISOString().split('T')[0]
             };
         }
-        // Generate and add hash
         const rand = crypto.getRandomValues(new Uint8Array(32));
         const hash = '0x' + Array.from(rand).map(b=>b.toString(16).padStart(2,'0')).join('');
         rowData.hash = hash;
@@ -1296,9 +1286,6 @@ $('#csvIssueAllBtn').addEventListener('click', async ()=>{
         logLive('Batch issue failed: ' + (e.message||e));
     }
 });
-/* =========================
-   CSV helpers end
-   ========================= */
 
 /* =========================
    Deep-link auto verify
@@ -1307,7 +1294,6 @@ $('#csvIssueAllBtn').addEventListener('click', async ()=>{
   const p = new URLSearchParams(location.search);
   const h = p.get('certHash');
   if(h){
-    // switch to verify tab
     $$('.tab').forEach(t=>t.classList.remove('active'));
     document.querySelector('.tab[data-tab="verify"]').classList.add('active');
     $$('.panel').forEach(p=>p.style.display='none');
