@@ -79,6 +79,8 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
 .small{font-size:12px}
 .flex{display:flex;gap:8px;align-items:center}
 .right{margin-left:auto}
+.student-entry{border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; margin-bottom: 12px;}
+.student-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 
 #reader{width:100%;max-width:420px;margin-top:12px;border-radius:8px;overflow:hidden;background:#07121a}
 
@@ -114,34 +116,30 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
     </div>
 
     <div class="grid">
-            <div>
-                <div id="panel-issue" class="panel">
+      <div>
+        <div id="panel-issue" class="panel">
           <div class="field">
-            <label>Upload Certificate (PDF) — Preview & SHA-256 Hash</label>
+            <label>Upload Certificate (PDF) to generate a reference hash</label>
             <input id="fileInput" type="file" accept="application/pdf" class="file-input"/>
-          _ <iframe id="pdfPreview" class="iframe-preview"></iframe>
-            <div style="margin-top:10px" class="flex">
-              <button id="genHashBtn" class="btn">📄 Generate Hash</button>
-              <button id="issueBtn" class="btn" style="background:var(--accent-yellow);color:#072;font-weight:800">✅ Issue On-Chain</button>
-              <div class="right mini" id="issueStatus"></div>
-            </div>
+            <iframe id="pdfPreview" class="iframe-preview"></iframe>
           </div>
 
           <div class="field" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+              <div><label>Student Wallet Address</label><input id="studentAddress" type="text" placeholder="0x..." /></div>
             <div><label>Student Name</label><input id="studentName" type="text" placeholder="e.g., A. Sharma" /></div>
-            <div><label>Course / Program</label><input id="courseName" type="text" placeholder="e.g., Blockchain Fundamentals" /></div>
+            <div><label>Course / Program</label><input id="courseName" type="text" placeholder="e.g., Blockchain" /></div>
             <div><label>Institution</label><input id="institutionName" type="text" placeholder="e.g., ABC Institute" /></div>
             <div><label>Grade (0-255)</label><input id="grade" type="text" placeholder="e.g., 85" /></div>
             <div><label>Issue Date</label><input id="issueDate" type="date" /></div>
           </div>
 
           <div class="field">
-            <label>Certificate Hash (0x...)</label>
-            <input id="hashInput" type="text" placeholder="0x..." />
-            <div class="controls">
-              <button id="copyLinkBtn" class="btn">📋 Copy Verify Link</button>
-              <button id="downloadQRBtn" class="btn">⬇️ Download QR</button>
-              <button id="shareQRBtn" class="btn">📤 Share QR</button>
+            <label>Reference Hash (Optional, from PDF)</label>
+            <input id="hashInput" type="text" placeholder="Generate from PDF above..." readonly/>
+             <div style="margin-top:10px" class="flex">
+              <button id="genHashBtn" class="btn">📄 Generate Hash from PDF</button>
+              <button id="issueBtn" class="btn" style="background:var(--accent-yellow);color:#072;font-weight:800">✅ Issue On-Chain</button>
+              <div class="right mini" id="issueStatus"></div>
             </div>
           </div>
 
@@ -151,10 +149,10 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
           </div>
         </div>
 
-                <div id="panel-verify" class="panel" style="display:none">
+        <div id="panel-verify" class="panel" style="display:none">
           <div class="field">
-            <label>Enter Certificate Hash</label>
-            <input id="verifyHash" type="text" placeholder="0x..." />
+            <label>Enter Token ID to Verify</label>
+            <input id="verifyHash" type="text" placeholder="e.g., 1" />
             <div style="margin-top:8px" class="flex">
               <button id="verifyBtn" class="btn">🔍 Verify On-Chain</button>
               <div class="right mini" id="verifyStatus"></div>
@@ -163,10 +161,10 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
           </div>
         </div>
 
-                <div id="panel-revoke" class="panel" style="display:none">
+        <div id="panel-revoke" class="panel" style="display:none">
           <div class="field">
-            <label>Certificate Hash to Revoke</label>
-            <input id="revokeHash" type="text" placeholder="0x..." />
+            <label>Token ID to Revoke</label>
+            <input id="revokeHash" type="text" placeholder="e.g., 1" />
             <div style="margin-top:8px" class="flex">
               <button id="revokeBtn" class="btn" style="background:var(--danger);color:#fff">❌ Revoke On-Chain</button>
               <div class="right mini" id="revokeStatus"></div>
@@ -174,38 +172,42 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
           </div>
         </div>
 
-                <div id="panel-institution" class="panel" style="display:none">
+        <div id="panel-institution" class="panel" style="display:none">
           <div class="field">
-            <label>Add Single Student (manual)</label>
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
-              <input id="inst_name" type="text" placeholder="Student name"/>
-              <input id="inst_course" type="text" placeholder="Course"/>
-              <input id="inst_institution" type="text" placeholder="Institution"/>
-              <input id="inst_grade" type="text" placeholder="Grade (0-255)"/>
-              <input id="inst_date" type="date"/>
-              <input id="inst_fileInput" type="file" accept="application/pdf" class="file-input" style="grid-column: span 2;"/>
-            </div>
+            <label>Add Student Credentials</label>
+              <div id="student-entries-container">
+                  <div class="student-entry">
+                      <div class="student-grid">
+                          <input type="text" class="inst_address" placeholder="Student Wallet Address (0x...)" style="grid-column: span 2;"/>
+                          <input type="text" class="inst_name" placeholder="Student name"/>
+                          <input type="text" class="inst_course" placeholder="Course"/>
+                          <input type="text" class="inst_institution" placeholder="Institution"/>
+                          <input type="text" class="inst_grade" placeholder="Grade (0-255)"/>
+                          <input type="date" class="inst_date"/>
+                      </div>
+                  </div>
+              </div>
             <div style="margin-top:8px" class="flex">
-              <button id="inst_generate" class="btn">Generate Random Hash</button>
-              <button id="inst_issue_single" class="btn" style="background:var(--accent-yellow);color:#072">Issue On-Chain</button>
+                <button id="addStudentEntryBtn" class="btn">➕ Add Another Student</button>
+              <button id="inst_issue_single" class="btn" style="background:var(--accent-yellow);color:#072">Issue All On-Chain</button>
               <div class="right mini" id="instStatus"></div>
             </div>
           </div>
 
           <div class="field">
-            <label>Bulk CSV Upload (CSV columns: name,course,institution,grade,date)</label>
+            <label>Bulk CSV Upload (columns: student_address,name,course,institution,grade,date)</label>
             <input id="csvInput" type="file" accept=".csv" class="file-input"/>
             <div style="margin-top:8px" class="flex">
-              <button id="csvGenerateHashesBtn" class="btn">📄 Generate Hashes from CSV</button>
-              <button id="csvIssueAllBtn" class="btn" style="background:var(--accent-yellow);color:#072">✅ Issue All On-Chain</button>
+              <button id="csvParseBtn" class="btn">Parse CSV</button>
+              <button id="csvIssueAllBtn" class="btn" style="background:var(--accent-yellow);color:#072">✅ Issue All From CSV</button>
             </div>
-            <div id="csvPreview" style="margin-top:10px; max-height: 150px; overflow-y: auto;" class="mini"></div>
+            <div id="csvPreview" style="margin-top:10px" class="mini"></div>
           </div>
         </div>
 
       </div>
 
-            <div>
+      <div>
         <div class="qr-area">
           <div class="qr-badge">
             <canvas id="qrCanvas" class="qr" width="220" height="220"></canvas>
@@ -213,12 +215,12 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
 
           <div style="width:100%" class="mini">
             <div style="display:flex;gap:8px">
-              <div style="flex:1"><strong style="color:#fff">Quick Actions</strong></div>
+              <div style="flex:1"><strong style="color:#fff">Credential QR Code</strong></div>
               <div style="flex:1;text-align:right" id="networkLabel" class="mini"></div>
             </div>
 
             <div style="margin-top:10px" class="mini">
-              Generate a certificate hash, then Issue on-chain (writes hash & metadata). Use Institution tab for CSV/batch issuance.
+               Enter student details and issue a credential (NFT) on-chain. The QR code will point to a verification link with the credential's Token ID.
             </div>
           </div>
         </div>
@@ -229,7 +231,7 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
         </div>
       </div>
     </div>   </div>   <div class="card" style="margin-top:14px">
-    <strong>All Issued Certificates (local)</strong>
+    <strong>All Issued Credentials (Local History)</strong>
     <div id="historyTable" style="margin-top:8px" class="mini"></div>
   </div>
 
@@ -240,7 +242,7 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
 
 <script>
 /* =========================
-   Contract address + ABI
+   Contract address + ABI (MODIFIED)
    ========================= */
 const contractAddress = "0x17f405356cc1101E1e04f31901d4eAcaaBb7A0C4";
 const contractABI = [
@@ -917,12 +919,11 @@ const contractABI = [
 	}
 ];
 
-
 /* =========================
    App State
    ========================= */
 let web3, contract, account;
-const LS_KEY = 'certs_v3_local';
+const LS_KEY = 'certs_v4_local_nft';
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
 
@@ -948,7 +949,7 @@ $('#themeBtn').addEventListener('click', ()=>{
   const val = document.documentElement.classList.contains('light') ? 'light' : 'dark';
   localStorage.setItem('dapp_theme', val);
 });
-(function initTheme(){ const v = localStorage.getItem('dapp_theme') || 'light'; if(v==='light') document.documentElement.classList.add('light'); })();
+(function initTheme(){ const v = localStorage.getItem('dapp_theme') || 'dark'; if(v==='light') document.documentElement.classList.add('light'); })();
 
 /* =========================
    Tabs
@@ -958,8 +959,6 @@ $$('.tab').forEach(t=> t.addEventListener('click', () => {
   $$('.panel').forEach(p=>p.style.display='none');
   document.getElementById('panel-' + t.dataset.tab).style.display = 'block';
 }));
-
-document.querySelectorAll('.tab').forEach(t => t.classList.contains('active') ? null : null);
 document.getElementById('panel-issue').style.display = 'block';
 
 /* =========================
@@ -973,11 +972,11 @@ $('#connectBtn').addEventListener('click', async ()=>{
     account = accs[0];
     contract = new web3.eth.Contract(contractABI, contractAddress);
     $('#connectBtn').innerText = '✅ Connected';
-    $('#walletStatus').innerText = '🟢 Connected: ' + account;
+    $('#walletStatus').innerText = '🟢 Connected: ' + account.substring(0, 6) + '...' + account.substring(account.length - 4);
     const netId = await web3.eth.net.getId();
     $('#networkLabel').innerText = 'Network: ' + netId;
     logLive('Wallet connected: ' + account);
-    window.ethereum.on('accountsChanged', (accs)=> { account = accs[0]; $('#walletStatus').innerText = '🟢 Connected: ' + account; });
+    window.ethereum.on('accountsChanged', (accs)=> { account = accs[0]; $('#walletStatus').innerText = '🟢 Connected: ' + account.substring(0, 6) + '...' + account.substring(account.length - 4); });
     window.ethereum.on('chainChanged', ()=> location.reload());
     renderIssued();
   } catch(e){
@@ -999,9 +998,8 @@ $('#genHashBtn').addEventListener('click', async ()=>{
     const arr = Array.from(new Uint8Array(digest));
     const hex = '0x' + arr.map(b=>b.toString(16).padStart(2,'0')).join('');
     $('#hashInput').value = hex;
-    drawQRCode(hex);
     setMini('issueStatus','Hash generated');
-    logLive('Hash generated: ' + hex);
+    logLive('PDF Hash generated: ' + hex);
   } catch(e){ console.error(e); showToast('Hash error'); }
 });
 
@@ -1014,11 +1012,6 @@ function drawQRCode(text){
   if(!text) return;
   try { QRCode.toCanvas($('#qrCanvas'), text, { width:220, margin:1 }, err => { if(err) console.error(err); }); } catch(e){ console.error(e); }
 }
-
-$('#hashInput').addEventListener('input', (e)=> {
-  const v=e.target.value.trim();
-  if(/^0x[0-9a-fA-F]{64}$/.test(v)){ $('#verifyHash').value=v; $('#revokeHash').value=v; drawQRCode(v); }
-});
 
 /* =========================
    Local Storage helpers
@@ -1037,14 +1030,14 @@ function renderIssued(){
         <div><strong style="color:#fff">${it.name||'—'}</strong><div class="mini">${it.course||'—'} • ${it.institution||'—'}</div></div>
         <div class="mini">${new Date(it.ts||Date.now()).toLocaleString()}</div>
       </div>
-      <div class="mini" style="margin-top:8px;word-break:break-all">${it.hash}</div>
+      <div class="mini" style="margin-top:8px;word-break:break-all">Token ID: <strong>${it.tokenId}</strong></div>
       <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="small-btn" data-act="copy" data-h="${it.hash}">Copy Link</button>
-        <button class="small-btn" data-act="qr" data-h="${it.hash}">Show QR</button>
-        <button class="small-btn" data-act="verify" data-h="${it.hash}">Verify</button>
-        <button class="small-btn" data-act="revoke" data-h="${it.hash}">Revoke</button>
+        <button class="small-btn" data-act="copy" data-id="${it.tokenId}">Copy Link</button>
+        <button class="small-btn" data-act="qr" data-id="${it.tokenId}">Show QR</button>
+        <button class="small-btn" data-act="verify" data-id="${it.tokenId}">Verify</button>
+        <button class="small-btn" data-act="revoke" data-id="${it.tokenId}">Revoke</button>
       </div>
-      <div class="mini" style="margin-top:6px">${it.txHash?('tx:'+it.txHash):''}${it.revoked?(' • REVOKED'):''}</div>
+      <div class="mini" style="margin-top:6px">${it.txHash?('tx:'+it.txHash.substring(0,12)+'...'):''}${it.revoked?(' • REVOKED'):''}</div>
     `;
     container.appendChild(div);
   });
@@ -1052,11 +1045,11 @@ function renderIssued(){
   container.querySelectorAll('button').forEach(b=>{
     b.onclick = async (ev) => {
       const act = ev.currentTarget.dataset.act;
-      const h = ev.currentTarget.dataset.h;
-      if(act==='copy'){ navigator.clipboard.writeText(buildVerifyURL(h)); showToast('Link copied'); }
-      else if(act==='qr'){ $('#hashInput').value=h; drawQRCode(h); }
-      else if(act==='verify'){ $('#verifyHash').value=h; $$('.tab').forEach(t=>t.classList.remove('active')); document.querySelector('.tab[data-tab=\"verify\"]').classList.add('active'); $$('.panel').forEach(p=>p.style.display='none'); document.getElementById('panel-verify').style.display='block'; $('#verifyBtn').click(); }
-      else if(act==='revoke'){ $('#revokeHash').value=h; $$('.tab').forEach(t=>t.classList.remove('active')); document.querySelector('.tab[data-tab=\"revoke\"]').classList.add('active'); $$('.panel').forEach(p=>p.style.display='none'); document.getElementById('panel-revoke').style.display='block'; $('#revokeBtn').click(); }
+      const id = ev.currentTarget.dataset.id;
+      if(act==='copy'){ navigator.clipboard.writeText(buildVerifyURL(id)); showToast('Link copied'); }
+      else if(act==='qr'){ drawQRCode(buildVerifyURL(id)); }
+      else if(act==='verify'){ $('#verifyHash').value=id; $$('.tab').forEach(t=>t.classList.remove('active')); document.querySelector('.tab[data-tab=\"verify\"]').classList.add('active'); $$('.panel').forEach(p=>p.style.display='none'); document.getElementById('panel-verify').style.display='block'; $('#verifyBtn').click(); }
+      else if(act==='revoke'){ $('#revokeHash').value=id; $$('.tab').forEach(t=>t.classList.remove('active')); document.querySelector('.tab[data-tab=\"revoke\"]').classList.add('active'); $$('.panel').forEach(p=>p.style.display='none'); document.getElementById('panel-revoke').style.display='block'; $('#revokeBtn').click(); }
     };
   });
 
@@ -1066,72 +1059,134 @@ function renderIssued(){
 function renderHistoryTable(){
   const items=getLocal();
   const container = $('#historyTable'); if(!items.length){ container.innerHTML='<div class="mini">No history</div>'; return; }
-  let html = '<table class="table"><thead><tr><th>When</th><th>Recipient</th><th>Course</th><th>Hash</th><th>Actions</th></tr></thead><tbody>';
+  let html = '<table class="table"><thead><tr><th>When</th><th>Recipient</th><th>Course</th><th>Token ID</th><th>Actions</th></tr></thead><tbody>';
   items.forEach(it=>{
-    html += `<tr><td>${new Date(it.ts||Date.now()).toLocaleString()}</td><td>${it.name||'—'}</td><td>${it.course||'—'}</td><td style="word-break:break-all">${it.hash}</td>
-      <td><button class="small-btn" onclick="navigator.clipboard.writeText('${buildVerifyURL(it.hash)}')">Copy</button>
-          <button class="small-btn" onclick="document.getElementById('hashInput').value='${it.hash}'; drawQRCode('${it.hash}')">QR</button>
-          <button class="small-btn" onclick="document.getElementById('verifyHash').value='${it.hash}'; document.querySelector('.tab[data-tab=verify]').click(); setTimeout(()=>document.getElementById('verifyBtn').click(),400)">Verify</button></td></tr>`;
+    html += `<tr><td>${new Date(it.ts||Date.now()).toLocaleString()}</td><td>${it.name||'—'}</td><td>${it.course||'—'}</td><td>${it.tokenId}</td>
+      <td><button class="small-btn" onclick="navigator.clipboard.writeText('${buildVerifyURL(it.tokenId)}')">Copy</button>
+          <button class="small-btn" onclick="drawQRCode('${buildVerifyURL(it.tokenId)}')">QR</button>
+          <button class="small-btn" onclick="document.getElementById('verifyHash').value='${it.tokenId}'; document.querySelector('.tab[data-tab=verify]').click(); setTimeout(()=>document.getElementById('verifyBtn').click(),400)">Verify</button></td></tr>`;
   });
   html += '</tbody></table>';
   container.innerHTML = html;
 }
 
-/* =========================
-   Build verify link
-   ========================= */
-function buildVerifyURL(hash){ return location.origin + location.pathname + '?certHash=' + encodeURIComponent(hash); }
+function buildVerifyURL(tokenId){ return location.origin + location.pathname + '?tokenId=' + encodeURIComponent(tokenId); }
 
 /* =========================
    Issue On-chain (single)
    ========================= */
-$('#issueBtn').addEventListener('click', async ()=>{
-  if(!contract || !account){ showToast('Connect wallet first'); return; }
-  const hash = $('#hashInput').value.trim();
-  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){ alert('Hash must be 0x + 64 hex chars. Generate from PDF.'); return; }
-  const recipient = $('#studentName').value.trim() || '—';
-  const course = $('#courseName').value.trim() || '—';
-  const institution = $('#institutionName').value.trim() || '—';
-  let grade = parseInt($('#grade').value,10); if(Number.isNaN(grade)) grade = 0; if(grade < 0) grade = 0; if(grade > 255) grade = 255;
-  const ipfsCid = ""; 
-  try {
-    setMini('issueStatus','Sending tx...');
-    logLive('Issuing certificate: ' + hash);
-    const gas = await contract.methods.issueCertificate(hash, recipient, course, grade, ipfsCid).estimateGas({ from: account });
-    const tx = await contract.methods.issueCertificate(hash, recipient, course, grade, ipfsCid).send({ from: account, gas: Math.floor(gas * 1.2) });
-    showToast('Issued on-chain: ' + tx.transactionHash, 5000);
-    setMini('issueStatus','Issued: ' + tx.transactionHash);
-    const meta = { hash, name: recipient, course, institution, grade, ts: Date.now(), txHash: tx.transactionHash };
-    saveLocal(meta); renderIssued();
-    logLive('Issue tx: ' + tx.transactionHash);
-  } catch(e){ console.error(e); showToast('Issue failed: ' + (e.message||e)); setMini('issueStatus','Error'); logLive('Issue failed: ' + (e.message||e)); }
+async function issueSingleCredential(studentAddress, studentName, courseName, institutionName, grade, issueDate, pdfHash) {
+    if (!contract || !account) { throw new Error('Connect wallet first'); }
+    if (!web3.utils.isAddress(studentAddress)) { throw new Error('Invalid student wallet address'); }
+
+    const recipient = studentName.trim() || 'N/A';
+    const course = courseName.trim() || 'N/A';
+    const institution = institutionName.trim() || 'N/A';
+    let gradeNum = parseInt(grade, 10);
+    if (Number.isNaN(gradeNum)) gradeNum = 0;
+    if (gradeNum < 0) gradeNum = 0;
+    if (gradeNum > 255) gradeNum = 255;
+
+    const metadata = {
+        name: "Verifiable Credential",
+        description: `Certificate for ${course}`,
+        attributes: [
+            { trait_type: "Recipient", value: recipient },
+            { trait_type: "Course", value: course },
+            { trait_type: "Institution", value: institution },
+            { trait_type: "Grade", value: gradeNum },
+            { trait_type: "Issue Date", value: issueDate || new Date().toISOString().split('T')[0]},
+            { trait_type: "PDF Hash", value: pdfHash || "N/A" }
+        ]
+    };
+
+    const tokenURI = 'data:application/json;base64,' + btoa(JSON.stringify(metadata));
+    const nextTokenId = await contract.methods.nextTokenId().call();
+
+    logLive(`Issuing credential for ${recipient} (Token ID: ${nextTokenId})...`);
+    const tx = await contract.methods.issueCredential(studentAddress, tokenURI).send({ from: account });
+    
+    const meta = { tokenId: nextTokenId, name: recipient, course, institution, grade: gradeNum, ts: Date.now(), txHash: tx.transactionHash };
+    saveLocal(meta);
+    renderIssued();
+    logLive(`Issue tx successful: ${tx.transactionHash}`);
+    return meta;
+}
+
+$('#issueBtn').addEventListener('click', async () => {
+    try {
+        setMini('issueStatus', 'Preparing...');
+        await issueSingleCredential(
+            $('#studentAddress').value,
+            $('#studentName').value,
+            $('#courseName').value,
+            $('#institutionName').value,
+            $('#grade').value,
+            $('#issueDate').value,
+            $('#hashInput').value
+        );
+        showToast('Credential issued successfully!', 5000);
+        setMini('issueStatus', 'Issued!');
+    } catch (e) {
+        console.error(e);
+        showToast('Issue failed: ' + (e.message || e));
+        setMini('issueStatus', 'Error');
+        logLive('Issue failed: ' + (e.message || e));
+    }
 });
 
+
 /* =========================
-   Verify (getCertificateDetails)
+   Verify
    ========================= */
 $('#verifyBtn').addEventListener('click', async ()=>{
-  if(!contract){ showToast('Connect wallet to verify (calls node)'); return; }
-  const hash = $('#verifyHash').value.trim();
-  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){ alert('Enter 0x + 64 hex chars'); return; }
+  if(!contract){ showToast('Connect wallet to verify'); return; }
+  const tokenId = $('#verifyHash').value.trim();
+  if(!/^\d+$/.test(tokenId)){ alert('Please enter a valid numeric Token ID.'); return; }
   try {
     setMini('verifyStatus','Checking...');
-    logLive('Verifying: ' + hash);
-    const details = await contract.methods.getCertificateDetails(hash).call();
-    const issuer = details.issuer || details[0];
-    const issueDate = Number(details.issueDate || details[1] || 0);
-    const isValid = (details.isValid !== undefined) ? details.isValid : details[2];
-    const recipientName = details.recipientName || details[3] || '';
-    const courseTitle = details.courseTitle || details[4] || '';
-    const grade = (details.grade !== undefined) ? details.grade : details[5];
-    const ipfsCid = details.ipfsCid || details[6] || '';
-    const validText = isValid ? '✅ VALID (on-chain)' : '❌ NOT VALID';
-    const issueWhen = issueDate ? new Date(issueDate * 1000).toLocaleString() : '—';
-    const out = `${validText}\nIssuer: ${issuer}\nIssued: ${issueWhen}\nRecipient: ${recipientName}\nCourse: ${courseTitle}\nGrade: ${grade}\nIPFS CID: ${ipfsCid}`;
+    logLive('Verifying Token ID: ' + tokenId);
+
+    const isValid = await contract.methods.verifyCredential(tokenId).call();
+    const isRevoked = await contract.methods.revoked(tokenId).call();
+
+    let out = `Credential Status: `;
+    if (isRevoked) {
+        out += `❌ REVOKED\n`;
+    } else if (isValid) {
+        out += `✅ VALID (On-Chain)\n`;
+    } else {
+        out += `❓ UNKNOWN OR INVALID\n`;
+    }
+
+    if (isValid) {
+        const owner = await contract.methods.ownerOf(tokenId).call();
+        const uri = await contract.methods.tokenURI(tokenId).call();
+        out += `Owner: ${owner}\n`;
+        if (uri.startsWith('data:application/json;base64,')) {
+            const decoded = atob(uri.substring(29));
+            const metadata = JSON.parse(decoded);
+            out += `\n--- METADATA ---\n`;
+            if(metadata.attributes && Array.isArray(metadata.attributes)) {
+                metadata.attributes.forEach(attr => {
+                    out += `${attr.trait_type}: ${attr.value}\n`;
+                });
+            }
+        }
+    }
     $('#verifyResult').innerText = out;
     setMini('verifyStatus','Done');
-    logLive('Verify result shown');
-  } catch(e){ console.error(e); showToast('Verify failed: ' + (e.message||e)); setMini('verifyStatus','Error'); logLive('Verify failed: ' + (e.message||e)); }
+    logLive('Verify result for Token ID ' + tokenId + ' shown');
+  } catch(e){
+      console.error(e);
+      let errorMsg = e.message || e;
+      if (errorMsg.includes("ERC721NonexistentToken")) {
+          $('#verifyResult').innerText = '❌ INVALID: This Token ID does not exist.';
+      } else {
+          $('#verifyResult').innerText = 'Error during verification.';
+      }
+      showToast('Verify failed: ' + errorMsg); setMini('verifyStatus','Error'); logLive('Verify failed: ' + errorMsg);
+    }
 });
 
 /* =========================
@@ -1139,67 +1194,69 @@ $('#verifyBtn').addEventListener('click', async ()=>{
    ========================= */
 $('#revokeBtn').addEventListener('click', async ()=>{
   if(!contract || !account){ showToast('Connect wallet'); return; }
-  const hash = $('#revokeHash').value.trim();
-  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){ alert('Enter 0x + 64 hex chars'); return; }
+  const tokenId = $('#revokeHash').value.trim();
+  if(!/^\d+$/.test(tokenId)){ alert('Enter a valid numeric Token ID'); return; }
   try {
     setMini('revokeStatus','Sending revoke tx...');
-    logLive('Revoking: ' + hash);
-    const gas = await contract.methods.revokeCertificate(hash).estimateGas({ from: account });
-    const tx = await contract.methods.revokeCertificate(hash).send({ from: account, gas: Math.floor(gas * 1.2) });
+    logLive('Revoking Token ID: ' + tokenId);
+    const tx = await contract.methods.revokeCredential(tokenId).send({ from: account });
     showToast('Revoked: ' + tx.transactionHash);
-    const list = getLocal(); const idx = list.findIndex(i=>i.hash===hash);
+    // update local record if exists
+    const list = getLocal(); const idx = list.findIndex(i=>i.tokenId==tokenId);
     if(idx>-1){ list[idx].revoked = true; list[idx].revokeTx = tx.transactionHash; localStorage.setItem(LS_KEY, JSON.stringify(list)); renderIssued(); }
-    setMini('revokeStatus','Revoked: ' + tx.transactionHash);
+    setMini('revokeStatus','Revoked: ' + tx.transactionHash.substring(0,14) + '...');
     logLive('Revoke tx: ' + tx.transactionHash);
   } catch(e){ console.error(e); showToast('Revoke failed: ' + (e.message||e)); setMini('revokeStatus','Error'); logLive('Revoke failed: ' + (e.message||e)); }
 });
 
-/* =========================
-   QR copy / download / share
-   ========================= */
-$('#copyLinkBtn').addEventListener('click', ()=>{ const h=$('#hashInput').value.trim(); if(!h){showToast('No hash');return;} navigator.clipboard.writeText(buildVerifyURL(h)); showToast('Link copied'); });
-$('#downloadQRBtn').addEventListener('click', ()=>{ const c = $('#qrCanvas'); const a=document.createElement('a'); a.download='certificate_qr.png'; a.href=c.toDataURL('image/png'); a.click(); });
-$('#shareQRBtn').addEventListener('click', ()=>{ const c = $('#qrCanvas'); c.toBlob(async blob => { const file = new File([blob],'certificate_qr.png',{type:'image/png'}); if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:'Certificate QR'}); } else showToast('Sharing not supported'); }); });
 
 /* =========================
-   Institution Single generate / issue
+   Institution Tab (Multiple Students)
    ========================= */
-$('#inst_generate').addEventListener('click', ()=>{
-  const name = $('#inst_name').value.trim();
-  const rand = crypto.getRandomValues(new Uint8Array(32));
-  const hash = '0x' + Array.from(rand).map(b=>b.toString(16).padStart(2,'0')).join('');
-  $('#hashInput').value = hash; drawQRCode(hash);
-  setMini('instStatus','Random hash generated');
-  showToast('Random hash generated for ' + (name||'student'));
+$('#addStudentEntryBtn').addEventListener('click', () => {
+    const container = $('#student-entries-container');
+    const newEntry = container.children[0].cloneNode(true);
+    newEntry.querySelectorAll('input').forEach(input => input.value = '');
+    container.appendChild(newEntry);
 });
 
-$('#inst_issue_single').addEventListener('click', async ()=>{
-  $('#studentName').value = $('#inst_name').value;
-  $('#courseName').value = $('#inst_course').value;
-  $('#institutionName').value = $('#inst_institution').value;
-  $('#grade').value = $('#inst_grade').value;
-  $('#issueDate').value = $('#inst_date').value;
-  if(!$('#hashInput').value) { showToast('Generate a hash first (randomly or from file)'); return; }
-  $('#issueBtn').click();
-});
+$('#inst_issue_single').addEventListener('click', async () => {
+    const entries = $$('.student-entry');
+    if (!entries.length) return alert('No students to issue.');
+    logLive(`Starting to issue credentials for ${entries.length} students from the form.`);
+    setMini('instStatus',`Issuing 1/${entries.length}...`);
 
-$('#inst_fileInput').addEventListener('change', async (event)=>{
-    const file = event.target.files[0];
-    if(!file) return;
-    try {
-        const ab = await file.arrayBuffer();
-        const digest = await crypto.subtle.digest('SHA-256', ab);
-        const arr = Array.from(new Uint8Array(digest));
-        const hex = '0x' + arr.map(b=>b.toString(16).padStart(2,'0')).join('');
-        $('#hashInput').value = hex;
-        drawQRCode(hex);
-        setMini('instStatus','Hash generated from file.');
-        logLive('Hash generated from institution file: ' + hex);
-    } catch(e){
-        console.error(e);
-        showToast('Hash generation error: ' + (e.message || e));
-        setMini('instStatus','File hash error.');
-    }
+    for(let i = 0; i < entries.length; i++) {
+        const entry = entries[i];
+        try {
+            const studentAddress = entry.querySelector('.inst_address').value;
+            const studentName = entry.querySelector('.inst_name').value;
+            setMini('instStatus',`Issuing ${i+1}/${entries.length}: ${studentName}`);
+            await issueSingleCredential(
+                studentAddress,
+                studentName,
+                entry.querySelector('.inst_course').value,
+                entry.querySelector('.inst_institution').value,
+                entry.querySelector('.inst_grade').value,
+                entry.querySelector('.inst_date').value,
+                null // No PDF hash for this flow
+            );
+            showToast(`Issued for ${studentName}`);
+        } catch (e) {
+            const studentName = entry.querySelector('.inst_name').value || `entry #${i+1}`;
+            console.error(e);
+            showToast(`Failed to issue for ${studentName}: ${e.message}`);
+            logLive(`Failed for ${studentName}: ${e.message}`);
+            setMini('instStatus', `Error on ${studentName}`);
+            if(!confirm(`An error occurred for ${studentName}. Continue with the next students?`)) {
+                logLive('User cancelled batch issuance.');
+                setMini('instStatus', 'Cancelled by user.');
+                return;
+            }
+        }
+    }
+    logLive('Finished issuing all students from form.');
+    setMini('instStatus', 'All Done!');
 });
 
 
@@ -1207,84 +1264,77 @@ $('#inst_fileInput').addEventListener('change', async (event)=>{
    CSV parse & bulk actions
    ========================= */
 let csvRows = [];
-$('#csvGenerateHashesBtn').addEventListener('click', async ()=>{
-    const file = $('#csvInput').files[0];
-    if(!file) return alert('Choose CSV file');
-    const text = await file.text();
-    const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
-    let start = 0; const headers = lines[0].split(',').map(h=>h.trim().toLowerCase());
-    const hasHeader = headers.some(h=>['name','course','institution','grade','date'].includes(h));
-    if(hasHeader){ start = 1; }
-    
-    csvRows = []; // Reset
-    for(let i=start;i<lines.length;i++){
-        const cols = lines[i].split(',').map(c=>c.trim());
-        let rowData = {};
-        if(hasHeader){
-            const obj = {};
-            headers.forEach((h, idx)=> obj[h]=cols[idx]||'');
-            rowData = {
-                name: obj.name || obj.recipient || '—',
-                course: obj.course || obj.coursetitle || '—',
-                institution: obj.institution || '—',
-                grade: parseInt(obj.grade,10) || 0,
-                date: obj.date || new Date().toISOString().split('T')[0]
-            };
-        } else {
-            rowData = {
-                name: cols[0]||'—',
-                course: cols[1]||'—',
-                institution: cols[2]||'—',
-                grade: parseInt(cols[3],10) || 0,
-                date: cols[4] || new Date().toISOString().split('T')[0]
-            };
-        }
-        const rand = crypto.getRandomValues(new Uint8Array(32));
-        const hash = '0x' + Array.from(rand).map(b=>b.toString(16).padStart(2,'0')).join('');
-        rowData.hash = hash;
-        csvRows.push(rowData);
+$('#csvParseBtn').addEventListener('click', async ()=>{
+  const file = $('#csvInput').files[0];
+  if(!file) return alert('Choose CSV file');
+  const text = await file.text();
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+  let start = 0; const headers = lines[0].split(',').map(h=>h.trim().toLowerCase());
+  const hasHeader = headers.some(h=>['student_address','name','course'].includes(h));
+  if(hasHeader){ start = 1; }
+  
+  csvRows = []; // Reset
+  for(let i=start;i<lines.length;i++){
+    const cols = lines[i].split(',').map(c=>c.trim());
+    let rowData = {};
+    if(hasHeader){
+      const obj = {};
+      headers.forEach((h, idx)=> obj[h]=cols[idx]||'');
+      rowData = {
+        student_address: obj.student_address || '',
+        name: obj.name || '—',
+        course: obj.course || '—',
+        institution: obj.institution || '—',
+        grade: obj.grade || 0,
+        date: obj.date || new Date().toISOString().split('T')[0]
+      };
+    } else { // Assume order: student_address, name, course, institution, grade, date
+      rowData = {
+        student_address: cols[0] || '',
+        name: cols[1]||'—',
+        course: cols[2]||'—',
+        institution: cols[3]||'—',
+        grade: cols[4] || 0,
+        date: cols[5] || new Date().toISOString().split('T')[0]
+      };
     }
+    if(rowData.student_address) {
+        csvRows.push(rowData);
+    }
+  }
 
-    let previewHtml = 'Generated Hashes for ' + csvRows.length + ' rows:<br>';
-    previewHtml += csvRows.slice(0, 5).map(r => `<strong>${r.name}</strong>: <span style="font-family:monospace; font-size:11px;">${r.hash.substring(0,22)}...</span>`).join('<br>');
-    if(csvRows.length > 5) previewHtml += '<br>...and more.';
-    $('#csvPreview').innerHTML = previewHtml;
-
-    showToast('Generated hashes for ' + csvRows.length + ' rows');
-    logLive('Generated hashes from CSV for ' + csvRows.length + ' rows.');
+  $('#csvPreview').innerText = `Parsed ${csvRows.length} valid rows. Sample: ${csvRows[0] ? (csvRows[0].name + ' (' + csvRows[0].student_address + ')') : 'N/A'}`;
+  showToast('CSV parsed: ' + csvRows.length + ' rows');
+  logLive('CSV parsed: ' + csvRows.length);
 });
 
-$('#csvIssueAllBtn').addEventListener('click', async ()=>{
-    if(!csvRows.length || !csvRows[0].hash) return alert('Please generate hashes from a CSV file first.');
-    if(!contract || !account) { showToast('Connect wallet first'); return; }
-    
-    try {
-        const hashes = csvRows.map(r => r.hash);
-        const names = csvRows.map(r => r.name || '—');
-        const courses = csvRows.map(r => r.course || '—');
-        const grades = csvRows.map(r => {
-            let g = parseInt(r.grade,10); if(Number.isNaN(g)) g = 0; if(g<0) g=0; if(g>255) g=255; return Number(g);
-        });
-        const ipfs = csvRows.map(() => '');
 
-        setMini('instStatus','Sending batch tx...');
-        logLive('Sending batchIssueCertificates for ' + hashes.length + ' certs');
-        const gas = await contract.methods.batchIssueCertificates(hashes, names, courses, grades, ipfs).estimateGas({ from: account });
-        const tx = await contract.methods.batchIssueCertificates(hashes, names, courses, grades, ipfs).send({ from: account, gas: Math.floor(gas * 1.3) });
-        showToast('Batch issued: ' + tx.transactionHash, 6000);
-        
-        for(let i=0;i<hashes.length;i++){
-            saveLocal({ hash: hashes[i], name: names[i], course: courses[i], institution: csvRows[i].institution, grade: grades[i], ts: Date.now(), txHash: tx.transactionHash });
-        }
-        renderIssued();
-        setMini('instStatus','Batch tx: ' + tx.transactionHash);
-        logLive('Batch tx: ' + tx.transactionHash);
-    } catch(e){
-        console.error(e);
-        showToast('Batch issue failed: ' + (e.message||e));
-        setMini('instStatus','Error');
-        logLive('Batch issue failed: ' + (e.message||e));
-    }
+$('#csvIssueAllBtn').addEventListener('click', async () => {
+    if (!csvRows.length) return alert('No parsed CSV data to issue.');
+    logLive(`Starting to issue credentials for ${csvRows.length} students from CSV.`);
+    
+    for (let i = 0; i < csvRows.length; i++) {
+        const r = csvRows[i];
+        try {
+            setMini('instStatus', `Issuing from CSV ${i+1}/${csvRows.length}: ${r.name}`);
+            await issueSingleCredential(
+                r.student_address, r.name, r.course, r.institution, r.grade, r.date, null
+            );
+            showToast(`Issued for ${r.name}`);
+        } catch (e) {
+            console.error(e);
+            showToast(`Failed to issue for ${r.name}: ${e.message}`);
+            logLive(`Failed for ${r.name}: ${e.message}`);
+            setMini('instStatus', `Error on ${r.name}`);
+            if (!confirm(`An error occurred for ${r.name}. Continue with the next students?`)) {
+                logLive('User cancelled CSV issuance.');
+                setMini('instStatus', 'Cancelled by user.');
+                return;
+            }
+        }
+    }
+    logLive('Finished issuing all students from CSV.');
+    setMini('instStatus', 'All Done!');
 });
 
 /* =========================
@@ -1292,15 +1342,21 @@ $('#csvIssueAllBtn').addEventListener('click', async ()=>{
    ========================= */
 (function autoVerifyFromURL(){
   const p = new URLSearchParams(location.search);
-  const h = p.get('certHash');
-  if(h){
+  const tokenId = p.get('tokenId');
+  if(tokenId){
     $$('.tab').forEach(t=>t.classList.remove('active'));
     document.querySelector('.tab[data-tab="verify"]').classList.add('active');
     $$('.panel').forEach(p=>p.style.display='none');
     document.getElementById('panel-verify').style.display='block';
-    $('#verifyHash').value = h;
-    drawQRCode(h);
-    setTimeout(()=> $('#verifyBtn').click(), 700);
+    $('#verifyHash').value = tokenId;
+    drawQRCode(buildVerifyURL(tokenId));
+    // Auto-click verify if wallet is already connected
+   const checkConnection = setInterval(() => {
+        if(contract && account) {
+            $('#verifyBtn').click();
+            clearInterval(checkConnection);
+        }
+   }, 500);
   }
 })();
 
@@ -1308,7 +1364,7 @@ $('#csvIssueAllBtn').addEventListener('click', async ()=>{
    Init
    ========================= */
 renderIssued();
-drawQRCode('Certificate Registry DApp');
+drawQRCode('Certificate Credential DApp');
 logLive('App initialized');
 
 </script>
