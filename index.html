@@ -103,8 +103,8 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
         <!-- ISSUE -->
         <div id="panel-issue" class="panel">
           <div class="field">
-            <label>Upload Certificate (PDF) — Preview & SHA-256 Hash</label>
-            <input id="fileInput" type="file" accept="application/pdf" class="file-input"/>
+            <label>Upload File (Any Type) — Preview (PDF only) & SHA-256 Hash</label>
+            <input id="fileInput" type="file" class="file-input"/>
             <iframe id="pdfPreview" class="iframe-preview"></iframe>
             <div style="margin-top:10px" class="flex">
               <button id="genHashBtn" class="btn">📄 Generate Hash</button>
@@ -686,14 +686,18 @@ $('#connectBtn').addEventListener('click', async () => {
 });
 
 /* =========================
-   SHA256 Hash generation (PDF)
+   SHA256 Hash generation (any file)
    ========================= */
 $('#genHashBtn').addEventListener('click', async () => {
   const file = $('#fileInput').files[0];
-  if (!file) return showToast('Please select a PDF first.');
+  if (!file) return showToast('Please select a file first.');
   try {
-    $('#pdfPreview').src = URL.createObjectURL(file);
-    $('#pdfPreview').style.display = 'block';
+    if (file.type === 'application/pdf') {
+      $('#pdfPreview').src = URL.createObjectURL(file);
+      $('#pdfPreview').style.display = 'block';
+    } else {
+      $('#pdfPreview').style.display = 'none';
+    }
     const ab = await file.arrayBuffer();
     const digest = await crypto.subtle.digest('SHA-256', ab);
     const arr = Array.from(new Uint8Array(digest));
@@ -869,7 +873,7 @@ $('#issueBtn').addEventListener('click', async () => {
   }
   const hash = $('#hashInput').value.trim();
   if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
-    showToast('Hash must be 0x + 64 hex chars. Generate from PDF.');
+    showToast('Hash must be 0x + 64 hex chars. Generate from file.');
     return;
   }
   const recipient = $('#studentName').value.trim() || '—';
@@ -887,7 +891,7 @@ $('#issueBtn').addEventListener('click', async () => {
     const tx = await contract.methods.issueCertificate(hash, recipient, course, grade, ipfsCid).send({ from: account, gas: Math.floor(gas * 1.5) });
     showToast('Issued on-chain: ' + tx.transactionHash, 5000);
     setMini('issueStatus', 'Issued: ' + tx.transactionHash);
-    const meta = { hash, name: recipient, course, institution, grade, ts: Date.now(), txHash: tx.transactionHash };
+    const meta = { hash, name: recipient, course, institution, grade, ts: Date.now(), txHash: tx.transactionHash, isFileBased: true };
     saveLocal(meta);
     renderIssued();
     drawQRCode(hash); // Ensure QR code is updated
@@ -927,8 +931,8 @@ $('#verifyBtn').addEventListener('click', async () => {
     const validText = isValid ? '✅ VALID (on-chain)' : '❌ NOT VALID';
     const issueWhen = issueDate ? new Date(issueDate * 1000).toLocaleString() : '—';
     const localRecord = getLocal().find(item => item.hash === hash);
-    const csvNote = localRecord && !localRecord.file ? '\nNote: This is a randomly generated hash (CSV-based, not PDF-derived)' : '';
-    const out = `${validText}\nIssuer: ${issuer}\nIssued: ${issueWhen}\nRecipient: ${recipientName}\nCourse: ${courseTitle}\nGrade: ${grade}\nIPFS CID: ${ipfsCid}${csvNote}`;
+    const note = localRecord && !localRecord.isFileBased ? '\nNote: This is a randomly generated hash (CSV/manual, not file-derived)' : '';
+    const out = `${validText}\nIssuer: ${issuer}\nIssued: ${issueWhen}\nRecipient: ${recipientName}\nCourse: ${courseTitle}\nGrade: ${grade}\nIPFS CID: ${ipfsCid}${note}`;
     $('#verifyResult').innerText = out;
     setMini('verifyStatus', 'Done');
     drawQRCode(hash); // Ensure QR code is updated
@@ -1083,7 +1087,33 @@ $('#inst_issue_single').addEventListener('click', async () => {
     showToast('Generate hash first');
     return;
   }
-  $('#issueBtn').click();
+  const hash = $('#hashInput').value.trim();
+  const recipient = $('#studentName').value.trim() || '—';
+  const course = $('#courseName').value.trim() || '—';
+  const institution = $('#institutionName').value.trim() || '—';
+  let grade = parseInt($('#grade').value, 10);
+  if (Number.isNaN(grade)) grade = 0;
+  if (grade < 0) grade = 0;
+  if (grade > 255) grade = 255;
+  const ipfsCid = "";
+  try {
+    setMini('instStatus', 'Sending tx...');
+    logLive('Issuing certificate: ' + hash);
+    const gas = await contract.methods.issueCertificate(hash, recipient, course, grade, ipfsCid).estimateGas({ from: account });
+    const tx = await contract.methods.issueCertificate(hash, recipient, course, grade, ipfsCid).send({ from: account, gas: Math.floor(gas * 1.5) });
+    showToast('Issued on-chain: ' + tx.transactionHash, 5000);
+    setMini('instStatus', 'Issued: ' + tx.transactionHash);
+    const meta = { hash, name: recipient, course, institution, grade, ts: Date.now(), txHash: tx.transactionHash, isFileBased: false };
+    saveLocal(meta);
+    renderIssued();
+    drawQRCode(hash); // Ensure QR code is updated
+    logLive('Issue tx: ' + tx.transactionHash);
+  } catch (e) {
+    console.error(e);
+    showToast('Issue failed: ' + (e.message || e));
+    setMini('instStatus', 'Error');
+    logLive('Issue failed: ' + (e.message || e));
+  }
 });
 
 /* =========================
@@ -1144,7 +1174,7 @@ $('#csvActionBtn').addEventListener('click', async () => {
     csvRows.forEach(r => {
       const rand = crypto.getRandomValues(new Uint8Array(32));
       const hash = '0x' + Array.from(rand).map(b => b.toString(16).padStart(2, '0')).join('');
-      const meta = { hash, name: r.name, course: r.course, institution: r.institution, grade: r.grade, ts: Date.now() };
+      const meta = { hash, name: r.name, course: r.course, institution: r.institution, grade: r.grade, ts: Date.now(), isFileBased: false };
       saveLocal(meta);
       drawQRCode(hash); // Show QR for the last generated hash
     });
@@ -1192,7 +1222,8 @@ $('#csvActionBtn').addEventListener('click', async () => {
           institution: csvRows[i].institution,
           grade: grades[i],
           ts: Date.now(),
-          txHash: tx.transactionHash
+          txHash: tx.transactionHash,
+          isFileBased: false
         });
       }
       renderIssued();
@@ -1226,7 +1257,7 @@ $('#csvActionBtn').addEventListener('click', async () => {
         logLive(`Issuing individual: ${name}`);
         const gas = await contract.methods.issueCertificate(h, name, course, Number(g), "").estimateGas({ from: account });
         const tx = await contract.methods.issueCertificate(h, name, course, Number(g), "").send({ from: account, gas: Math.floor(gas * 1.5) });
-        saveLocal({ hash: h, name, course, institution: r.institution, grade: g, ts: Date.now(), txHash: tx.transactionHash });
+        saveLocal({ hash: h, name, course, institution: r.institution, grade: g, ts: Date.now(), txHash: tx.transactionHash, isFileBased: false });
         renderIssued();
         drawQRCode(h); // Show QR for each issued certificate
         showToast(`Issued: ${name} (${tx.transactionHash})`, 4000);
