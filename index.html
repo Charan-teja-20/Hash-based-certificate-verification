@@ -206,8 +206,7 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
       <div>
         <div class="qr-area">
           <div class="qr-badge">
-            <canvas id="qrCanvas" class="qr" width="220" height="220ქ
-220"></canvas>
+            <canvas id="qrCanvas" class="qr" width="220" height="220"></canvas>
           </div>
 
           <div style="width:100%" class="mini">
@@ -653,9 +652,6 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   $$('.panel').forEach(p => p.style.display = 'none');
   document.getElementById('panel-' + t.dataset.tab).style.display = 'block';
 }));
-
-/* expose panels as elements so .panel selection works */
-document.querySelectorAll('.tab').forEach(t => t.classList.contains('active') ? null : null);
 document.getElementById('panel-issue').style.display = 'block';
 
 /* =========================
@@ -694,7 +690,7 @@ $('#connectBtn').addEventListener('click', async () => {
    ========================= */
 $('#genHashBtn').addEventListener('click', async () => {
   const file = $('#fileInput').files[0];
-  if (!file) return alert('Please select a PDF first.');
+  if (!file) return showToast('Please select a PDF first.');
   try {
     $('#pdfPreview').src = URL.createObjectURL(file);
     $('#pdfPreview').style.display = 'block';
@@ -708,7 +704,8 @@ $('#genHashBtn').addEventListener('click', async () => {
     logLive('Hash generated: ' + hex);
   } catch (e) {
     console.error(e);
-    showToast('Hash error');
+    showToast('Hash generation failed: ' + (e.message || e));
+    logLive('Hash generation failed: ' + (e.message || e));
   }
 });
 
@@ -721,13 +718,33 @@ function setMini(id, txt) {
    Draw QR
    ========================= */
 function drawQRCode(text) {
-  if (!text) return;
+  if (!text) {
+    showToast('No hash to generate QR code');
+    return;
+  }
+  const canvas = $('#qrCanvas');
+  if (!canvas) {
+    showToast('QR canvas not found');
+    logLive('QR canvas not found');
+    return;
+  }
+  // Clear canvas
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   try {
-    QRCode.toCanvas($('#qrCanvas'), text, { width: 220, margin: 1 }, err => {
-      if (err) console.error(err);
+    QRCode.toCanvas(canvas, text, { width: 220, margin: 1, color: { dark: '#000000', light: '#ffffff' } }, err => {
+      if (err) {
+        console.error('QRCode error:', err);
+        showToast('Failed to generate QR code');
+        logLive('QRCode generation failed: ' + (err.message || err));
+      } else {
+        logLive('QR code generated for: ' + text);
+      }
     });
   } catch (e) {
-    console.error(e);
+    console.error('QRCode exception:', e);
+    showToast('QR code generation error: ' + (e.message || e));
+    logLive('QR code generation error: ' + (e.message || e));
   }
 }
 
@@ -852,7 +869,7 @@ $('#issueBtn').addEventListener('click', async () => {
   }
   const hash = $('#hashInput').value.trim();
   if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
-    alert('Hash must be 0x + 64 hex chars. Generate from PDF.');
+    showToast('Hash must be 0x + 64 hex chars. Generate from PDF.');
     return;
   }
   const recipient = $('#studentName').value.trim() || '—';
@@ -873,6 +890,7 @@ $('#issueBtn').addEventListener('click', async () => {
     const meta = { hash, name: recipient, course, institution, grade, ts: Date.now(), txHash: tx.transactionHash };
     saveLocal(meta);
     renderIssued();
+    drawQRCode(hash); // Ensure QR code is updated
     logLive('Issue tx: ' + tx.transactionHash);
   } catch (e) {
     console.error(e);
@@ -892,7 +910,7 @@ $('#verifyBtn').addEventListener('click', async () => {
   }
   const hash = $('#verifyHash').value.trim();
   if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
-    alert('Enter 0x + 64 hex chars');
+    showToast('Enter 0x + 64 hex chars');
     return;
   }
   try {
@@ -913,6 +931,7 @@ $('#verifyBtn').addEventListener('click', async () => {
     const out = `${validText}\nIssuer: ${issuer}\nIssued: ${issueWhen}\nRecipient: ${recipientName}\nCourse: ${courseTitle}\nGrade: ${grade}\nIPFS CID: ${ipfsCid}${csvNote}`;
     $('#verifyResult').innerText = out;
     setMini('verifyStatus', 'Done');
+    drawQRCode(hash); // Ensure QR code is updated
     logLive('Verify result shown');
   } catch (e) {
     console.error(e);
@@ -932,7 +951,7 @@ $('#revokeBtn').addEventListener('click', async () => {
   }
   const hash = $('#revokeHash').value.trim();
   if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
-    alert('Enter 0x + 64 hex chars');
+    showToast('Enter 0x + 64 hex chars');
     return;
   }
   try {
@@ -973,6 +992,10 @@ $('#copyLinkBtn').addEventListener('click', () => {
 });
 $('#downloadQRBtn').addEventListener('click', () => {
   const c = $('#qrCanvas');
+  if (!c.toDataURL('image/png').includes('data:image/png')) {
+    showToast('No QR code to download');
+    return;
+  }
   const a = document.createElement('a');
   a.download = 'certificate_qr.png';
   a.href = c.toDataURL('image/png');
@@ -980,6 +1003,10 @@ $('#downloadQRBtn').addEventListener('click', () => {
 });
 $('#shareQRBtn').addEventListener('click', () => {
   const c = $('#qrCanvas');
+  if (!c.toDataURL('image/png').includes('data:image/png')) {
+    showToast('No QR code to share');
+    return;
+  }
   c.toBlob(async blob => {
     const file = new File([blob], 'certificate_qr.png', { type: 'image/png' });
     if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -1026,6 +1053,7 @@ $('#stopScanBtn').addEventListener('click', async () => {
     showToast('Scanner stopped');
   } catch (e) {
     console.warn(e);
+    showToast('Scanner stop failed: ' + (e.message || e));
   }
 });
 
@@ -1064,7 +1092,7 @@ $('#inst_issue_single').addEventListener('click', async () => {
 let csvRows = [];
 $('#csvParseBtn').addEventListener('click', async () => {
   const file = $('#csvInput').files[0];
-  if (!file) return alert('Choose CSV file');
+  if (!file) return showToast('Choose CSV file');
   try {
     const text = await file.text();
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
@@ -1106,18 +1134,19 @@ $('#csvParseBtn').addEventListener('click', async () => {
 });
 
 $('#csvActionBtn').addEventListener('click', async () => {
-  if (!csvRows.length) return alert('No CSV rows parsed');
-  const mode = $('#bulkMode').value;
+  if (!csvRows.length) return showToast('No CSV rows parsed');
   if (!contract || !account) {
     showToast('Connect wallet first');
     return;
   }
+  const mode = $('#bulkMode').value;
   if (mode === 'generate') {
     csvRows.forEach(r => {
       const rand = crypto.getRandomValues(new Uint8Array(32));
       const hash = '0x' + Array.from(rand).map(b => b.toString(16).padStart(2, '0')).join('');
       const meta = { hash, name: r.name, course: r.course, institution: r.institution, grade: r.grade, ts: Date.now() };
       saveLocal(meta);
+      drawQRCode(hash); // Show QR for the last generated hash
     });
     renderIssued();
     showToast('Generated hashes locally for ' + csvRows.length + ' rows');
@@ -1167,6 +1196,7 @@ $('#csvActionBtn').addEventListener('click', async () => {
         });
       }
       renderIssued();
+      drawQRCode(hashes[hashes.length - 1]); // Show QR for the last issued certificate
       setMini('instStatus', `Batch tx: ${tx.transactionHash}`);
       logLive(`Batch tx successful: ${tx.transactionHash}`);
     } catch (e) {
@@ -1198,6 +1228,7 @@ $('#csvActionBtn').addEventListener('click', async () => {
         const tx = await contract.methods.issueCertificate(h, name, course, Number(g), "").send({ from: account, gas: Math.floor(gas * 1.5) });
         saveLocal({ hash: h, name, course, institution: r.institution, grade: g, ts: Date.now(), txHash: tx.transactionHash });
         renderIssued();
+        drawQRCode(h); // Show QR for each issued certificate
         showToast(`Issued: ${name} (${tx.transactionHash})`, 4000);
         logLive(`Issued individual tx: ${tx.transactionHash}`);
         successCount++;
