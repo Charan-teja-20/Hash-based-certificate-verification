@@ -206,7 +206,8 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
       <div>
         <div class="qr-area">
           <div class="qr-badge">
-            <canvas id="qrCanvas" class="qr" width="220" height="220"></canvas>
+            <canvas id="qrCanvas" class="qr" width="220" height="220ქ
+220"></canvas>
           </div>
 
           <div style="width:100%" class="mini">
@@ -243,7 +244,7 @@ canvas.qr{background:#fff;border-radius:10px;padding:8px;display:block}
 /* =========================
    Contract address + ABI (provided)
    ========================= */
-const contractAddress = "0x21a8F4B5C5C1EE079B34bDBFFEec6DA2B1974949";
+const contractAddress = "0x67F670024Fd099388b4c1009F89918A844701218";
 const contractABI = [
 	{
 		"inputs": [
@@ -618,12 +619,13 @@ const $$ = sel => Array.from(document.querySelectorAll(sel));
 /* =========================
    Utils: Toast + console
    ========================= */
-function showToast(msg, timeout=3500){
+function showToast(msg, timeout = 3500) {
   const t = $('#toast');
-  t.textContent = msg; t.style.display = 'block';
-  setTimeout(()=> t.style.display='none', timeout);
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', timeout);
 }
-function logLive(msg){
+function logLive(msg) {
   const el = $('#liveConsole');
   const time = new Date().toLocaleTimeString();
   el.innerText = `[${time}] ${msg}\n` + el.innerText;
@@ -632,19 +634,23 @@ function logLive(msg){
 /* =========================
    Theme
    ========================= */
-$('#themeBtn').addEventListener('click', ()=>{
+$('#themeBtn').addEventListener('click', () => {
   document.documentElement.classList.toggle('light');
   const val = document.documentElement.classList.contains('light') ? 'light' : 'dark';
   localStorage.setItem('dapp_theme', val);
 });
-(function initTheme(){ const v = localStorage.getItem('dapp_theme') || 'dark'; if(v==='light') document.documentElement.classList.add('light'); })();
+(function initTheme() {
+  const v = localStorage.getItem('dapp_theme') || 'dark';
+  if (v === 'light') document.documentElement.classList.add('light');
+})();
 
 /* =========================
    Tabs
    ========================= */
-$$('.tab').forEach(t=> t.addEventListener('click', () => {
-  $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
-  $$('.panel').forEach(p=>p.style.display='none');
+$$('.tab').forEach(t => t.addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  $$('.panel').forEach(p => p.style.display = 'none');
   document.getElementById('panel-' + t.dataset.tab).style.display = 'block';
 }));
 
@@ -655,8 +661,11 @@ document.getElementById('panel-issue').style.display = 'block';
 /* =========================
    Wallet connect
    ========================= */
-$('#connectBtn').addEventListener('click', async ()=>{
-  if(!window.ethereum){ alert('Please install MetaMask'); return; }
+$('#connectBtn').addEventListener('click', async () => {
+  if (!window.ethereum) {
+    showToast('Please install MetaMask');
+    return;
+  }
   try {
     web3 = new Web3(window.ethereum);
     const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -667,67 +676,102 @@ $('#connectBtn').addEventListener('click', async ()=>{
     const netId = await web3.eth.net.getId();
     $('#networkLabel').innerText = 'Network: ' + netId;
     logLive('Wallet connected: ' + account);
-    window.ethereum.on('accountsChanged', (accs)=> { account = accs[0]; $('#walletStatus').innerText = '🟢 Connected: ' + account; });
-    window.ethereum.on('chainChanged', ()=> location.reload());
+    window.ethereum.on('accountsChanged', (accs) => {
+      account = accs[0];
+      $('#walletStatus').innerText = '🟢 Connected: ' + account;
+    });
+    window.ethereum.on('chainChanged', () => location.reload());
     renderIssued();
-  } catch(e){
-    console.error(e); showToast('Wallet connection failed: ' + (e.message||e)); logLive('Connect failed: ' + (e.message||e));
+  } catch (e) {
+    console.error(e);
+    showToast('Wallet connection failed: ' + (e.message || e));
+    logLive('Connect failed: ' + (e.message || e));
   }
 });
 
 /* =========================
    SHA256 Hash generation (PDF)
    ========================= */
-$('#genHashBtn').addEventListener('click', async ()=>{
+$('#genHashBtn').addEventListener('click', async () => {
   const file = $('#fileInput').files[0];
-  if(!file) return alert('Please select a PDF first.');
+  if (!file) return alert('Please select a PDF first.');
   try {
-    // preview
     $('#pdfPreview').src = URL.createObjectURL(file);
     $('#pdfPreview').style.display = 'block';
     const ab = await file.arrayBuffer();
     const digest = await crypto.subtle.digest('SHA-256', ab);
     const arr = Array.from(new Uint8Array(digest));
-    const hex = '0x' + arr.map(b=>b.toString(16).padStart(2,'0')).join('');
+    const hex = '0x' + arr.map(b => b.toString(16).padStart(2, '0')).join('');
     $('#hashInput').value = hex;
     drawQRCode(hex);
-    setMini('issueStatus','Hash generated');
+    setMini('issueStatus', 'Hash generated');
     logLive('Hash generated: ' + hex);
-  } catch(e){ console.error(e); showToast('Hash error'); }
+  } catch (e) {
+    console.error(e);
+    showToast('Hash error');
+  }
 });
 
-function setMini(id, txt){ const el=document.getElementById(id); if(el) el.innerText = txt; }
+function setMini(id, txt) {
+  const el = document.getElementById(id);
+  if (el) el.innerText = txt;
+}
 
 /* =========================
    Draw QR
    ========================= */
-function drawQRCode(text){
-  if(!text) return;
-  try { QRCode.toCanvas($('#qrCanvas'), text, { width:220, margin:1 }, err => { if(err) console.error(err); }); } catch(e){ console.error(e); }
+function drawQRCode(text) {
+  if (!text) return;
+  try {
+    QRCode.toCanvas($('#qrCanvas'), text, { width: 220, margin: 1 }, err => {
+      if (err) console.error(err);
+    });
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 /* mirror hash to other inputs */
-$('#hashInput').addEventListener('input', (e)=> {
-  const v=e.target.value.trim();
-  if(/^0x[0-9a-fA-F]{64}$/.test(v)){ $('#verifyHash').value=v; $('#revokeHash').value=v; drawQRCode(v); }
+$('#hashInput').addEventListener('input', (e) => {
+  const v = e.target.value.trim();
+  if (/^0x[0-9a-fA-F]{64}$/.test(v)) {
+    $('#verifyHash').value = v;
+    $('#revokeHash').value = v;
+    drawQRCode(v);
+  }
 });
 
 /* =========================
    Local Storage helpers
    ========================= */
-function getLocal(){ try{return JSON.parse(localStorage.getItem(LS_KEY)||'[]')}catch{return []} }
-function saveLocal(entry){ const arr=getLocal(); arr.unshift(entry); localStorage.setItem(LS_KEY, JSON.stringify(arr.slice(0,1000))); }
-function renderIssued(){
+function getLocal() {
+  try {
+    return JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+function saveLocal(entry) {
+  const arr = getLocal();
+  arr.unshift(entry);
+  localStorage.setItem(LS_KEY, JSON.stringify(arr.slice(0, 1000)));
+}
+function renderIssued() {
   const items = getLocal();
   const container = $('#issuedList');
   container.innerHTML = '';
-  if(!items.length){ container.innerHTML = '<div class="mini">No local records yet</div>'; renderHistoryTable(); return; }
-  items.forEach(it=>{
-    const div = document.createElement('div'); div.className='issued-item';
+  if (!items.length) {
+    container.innerHTML = '<div class="mini">No local records yet</div>';
+    renderHistoryTable();
+    return;
+  }
+  items.forEach(it => {
+    const div = document.createElement('div');
+    div.className = 'issued-item';
     div.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><strong style="color:#fff">${it.name||'—'}</strong><div class="mini">${it.course||'—'} • ${it.institution||'—'}</div></div>
-        <div class="mini">${new Date(it.ts||Date.now()).toLocaleString()}</div>
+        <div><strong style="color:#fff">${it.name || '—'}</strong><div class="mini">${it.course || '—'} • ${it.institution || '—'}</div></div>
+        <div class="mini">${new Date(it.ts || Date.now()).toLocaleString()}</div>
       </div>
       <div class="mini" style="margin-top:8px;word-break:break-all">${it.hash}</div>
       <div style="display:flex;gap:8px;margin-top:8px">
@@ -736,20 +780,36 @@ function renderIssued(){
         <button class="small-btn" data-act="verify" data-h="${it.hash}">Verify</button>
         <button class="small-btn" data-act="revoke" data-h="${it.hash}">Revoke</button>
       </div>
-      <div class="mini" style="margin-top:6px">${it.txHash?('tx:'+it.txHash):''}${it.revoked?(' • REVOKED'):''}</div>
+      <div class="mini" style="margin-top:6px">${it.txHash ? ('tx:' + it.txHash) : ''}${it.revoked ? (' • REVOKED') : ''}</div>
     `;
     container.appendChild(div);
   });
 
-  // attach handlers
-  container.querySelectorAll('button').forEach(b=>{
+  container.querySelectorAll('button').forEach(b => {
     b.onclick = async (ev) => {
       const act = ev.currentTarget.dataset.act;
       const h = ev.currentTarget.dataset.h;
-      if(act==='copy'){ navigator.clipboard.writeText(buildVerifyURL(h)); showToast('Link copied'); }
-      else if(act==='qr'){ $('#hashInput').value=h; drawQRCode(h); }
-      else if(act==='verify'){ $('#verifyHash').value=h; $$('.tab').forEach(t=>t.classList.remove('active')); document.querySelector('.tab[data-tab=\"verify\"]').classList.add('active'); $$('.panel').forEach(p=>p.style.display='none'); document.getElementById('panel-verify').style.display='block'; $('#verifyBtn').click(); }
-      else if(act==='revoke'){ $('#revokeHash').value=h; $$('.tab').forEach(t=>t.classList.remove('active')); document.querySelector('.tab[data-tab=\"revoke\"]').classList.add('active'); $$('.panel').forEach(p=>p.style.display='none'); document.getElementById('panel-revoke').style.display='block'; $('#revokeBtn').click(); }
+      if (act === 'copy') {
+        navigator.clipboard.writeText(buildVerifyURL(h));
+        showToast('Link copied');
+      } else if (act === 'qr') {
+        $('#hashInput').value = h;
+        drawQRCode(h);
+      } else if (act === 'verify') {
+        $('#verifyHash').value = h;
+        $$('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.tab[data-tab="verify"]').classList.add('active');
+        $$('.panel').forEach(p => p.style.display = 'none');
+        document.getElementById('panel-verify').style.display = 'block';
+        $('#verifyBtn').click();
+      } else if (act === 'revoke') {
+        $('#revokeHash').value = h;
+        $$('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelector('.tab[data-tab="revoke"]').classList.add('active');
+        $$('.panel').forEach(p => p.style.display = 'none');
+        document.getElementById('panel-revoke').style.display = 'block';
+        $('#revokeBtn').click();
+      }
     };
   });
 
@@ -757,12 +817,16 @@ function renderIssued(){
 }
 
 /* history table (bottom) */
-function renderHistoryTable(){
-  const items=getLocal();
-  const container = $('#historyTable'); if(!items.length){ container.innerHTML='<div class="mini">No history</div>'; return; }
+function renderHistoryTable() {
+  const items = getLocal();
+  const container = $('#historyTable');
+  if (!items.length) {
+    container.innerHTML = '<div class="mini">No history</div>';
+    return;
+  }
   let html = '<table class="table"><thead><tr><th>When</th><th>Recipient</th><th>Course</th><th>Hash</th><th>Actions</th></tr></thead><tbody>';
-  items.forEach(it=>{
-    html += `<tr><td>${new Date(it.ts||Date.now()).toLocaleString()}</td><td>${it.name||'—'}</td><td>${it.course||'—'}</td><td style="word-break:break-all">${it.hash}</td>
+  items.forEach(it => {
+    html += `<tr><td>${new Date(it.ts || Date.now()).toLocaleString()}</td><td>${it.name || '—'}</td><td>${it.course || '—'}</td><td style="word-break:break-all">${it.hash}</td>
       <td><button class="small-btn" onclick="navigator.clipboard.writeText('${buildVerifyURL(it.hash)}')">Copy</button>
           <button class="small-btn" onclick="document.getElementById('hashInput').value='${it.hash}'; drawQRCode('${it.hash}')">QR</button>
           <button class="small-btn" onclick="document.getElementById('verifyHash').value='${it.hash}'; document.querySelector('.tab[data-tab=verify]').click(); setTimeout(()=>document.getElementById('verifyBtn').click(),400)">Verify</button></td></tr>`;
@@ -774,48 +838,67 @@ function renderHistoryTable(){
 /* =========================
    Build verify link
    ========================= */
-function buildVerifyURL(hash){ return location.origin + location.pathname + '?certHash=' + encodeURIComponent(hash); }
+function buildVerifyURL(hash) {
+  return location.origin + location.pathname + '?certHash=' + encodeURIComponent(hash);
+}
 
 /* =========================
    Issue On-chain (single)
-   - Ensures numeric values converted to strings to avoid BigInt mixing
    ========================= */
-$('#issueBtn').addEventListener('click', async ()=>{
-  if(!contract || !account){ showToast('Connect wallet first'); return; }
+$('#issueBtn').addEventListener('click', async () => {
+  if (!contract || !account) {
+    showToast('Connect wallet first');
+    return;
+  }
   const hash = $('#hashInput').value.trim();
-  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){ alert('Hash must be 0x + 64 hex chars. Generate from PDF.'); return; }
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+    alert('Hash must be 0x + 64 hex chars. Generate from PDF.');
+    return;
+  }
   const recipient = $('#studentName').value.trim() || '—';
   const course = $('#courseName').value.trim() || '—';
   const institution = $('#institutionName').value.trim() || '—';
-  let grade = parseInt($('#grade').value,10); if(Number.isNaN(grade)) grade = 0; if(grade < 0) grade = 0; if(grade > 255) grade = 255;
-  const ipfsCid = ""; // optional, not used
+  let grade = parseInt($('#grade').value, 10);
+  if (Number.isNaN(grade)) grade = 0;
+  if (grade < 0) grade = 0;
+  if (grade > 255) grade = 255;
+  const ipfsCid = "";
   try {
-    setMini('issueStatus','Sending tx...');
+    setMini('issueStatus', 'Sending tx...');
     logLive('Issuing certificate: ' + hash);
-    // BigInt-safe: convert numeric to string before sending arrays / params where mixing happens.
-    // web3 accepts numbers, but to avoid BigInt mixing we pass grade as Number (safe) and strings for other params.
     const gas = await contract.methods.issueCertificate(hash, recipient, course, grade, ipfsCid).estimateGas({ from: account });
-    const tx = await contract.methods.issueCertificate(hash, recipient, course, grade, ipfsCid).send({ from: account, gas: Math.floor(gas * 1.2) });
+    const tx = await contract.methods.issueCertificate(hash, recipient, course, grade, ipfsCid).send({ from: account, gas: Math.floor(gas * 1.5) });
     showToast('Issued on-chain: ' + tx.transactionHash, 5000);
-    setMini('issueStatus','Issued: ' + tx.transactionHash);
+    setMini('issueStatus', 'Issued: ' + tx.transactionHash);
     const meta = { hash, name: recipient, course, institution, grade, ts: Date.now(), txHash: tx.transactionHash };
-    saveLocal(meta); renderIssued();
+    saveLocal(meta);
+    renderIssued();
     logLive('Issue tx: ' + tx.transactionHash);
-  } catch(e){ console.error(e); showToast('Issue failed: ' + (e.message||e)); setMini('issueStatus','Error'); logLive('Issue failed: ' + (e.message||e)); }
+  } catch (e) {
+    console.error(e);
+    showToast('Issue failed: ' + (e.message || e));
+    setMini('issueStatus', 'Error');
+    logLive('Issue failed: ' + (e.message || e));
+  }
 });
 
 /* =========================
    Verify (getCertificateDetails)
    ========================= */
-$('#verifyBtn').addEventListener('click', async ()=>{
-  if(!contract){ showToast('Connect wallet to verify (calls node)'); return; }
+$('#verifyBtn').addEventListener('click', async () => {
+  if (!contract) {
+    showToast('Connect wallet to verify (calls node)');
+    return;
+  }
   const hash = $('#verifyHash').value.trim();
-  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){ alert('Enter 0x + 64 hex chars'); return; }
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+    alert('Enter 0x + 64 hex chars');
+    return;
+  }
   try {
-    setMini('verifyStatus','Checking...');
+    setMini('verifyStatus', 'Checking...');
     logLive('Verifying: ' + hash);
     const details = await contract.methods.getCertificateDetails(hash).call();
-    // fields: issuer, issueDate (uint256), isValid, recipientName, courseTitle, grade, ipfsCid
     const issuer = details.issuer || details[0];
     const issueDate = Number(details.issueDate || details[1] || 0);
     const isValid = (details.isValid !== undefined) ? details.isValid : details[2];
@@ -825,47 +908,94 @@ $('#verifyBtn').addEventListener('click', async ()=>{
     const ipfsCid = details.ipfsCid || details[6] || '';
     const validText = isValid ? '✅ VALID (on-chain)' : '❌ NOT VALID';
     const issueWhen = issueDate ? new Date(issueDate * 1000).toLocaleString() : '—';
-    const out = `${validText}\nIssuer: ${issuer}\nIssued: ${issueWhen}\nRecipient: ${recipientName}\nCourse: ${courseTitle}\nGrade: ${grade}\nIPFS CID: ${ipfsCid}`;
+    const localRecord = getLocal().find(item => item.hash === hash);
+    const csvNote = localRecord && !localRecord.file ? '\nNote: This is a randomly generated hash (CSV-based, not PDF-derived)' : '';
+    const out = `${validText}\nIssuer: ${issuer}\nIssued: ${issueWhen}\nRecipient: ${recipientName}\nCourse: ${courseTitle}\nGrade: ${grade}\nIPFS CID: ${ipfsCid}${csvNote}`;
     $('#verifyResult').innerText = out;
-    setMini('verifyStatus','Done');
+    setMini('verifyStatus', 'Done');
     logLive('Verify result shown');
-  } catch(e){ console.error(e); showToast('Verify failed: ' + (e.message||e)); setMini('verifyStatus','Error'); logLive('Verify failed: ' + (e.message||e)); }
+  } catch (e) {
+    console.error(e);
+    showToast('Verify failed: ' + (e.message || e));
+    setMini('verifyStatus', 'Error');
+    logLive('Verify failed: ' + (e.message || e));
+  }
 });
 
 /* =========================
    Revoke
    ========================= */
-$('#revokeBtn').addEventListener('click', async ()=>{
-  if(!contract || !account){ showToast('Connect wallet'); return; }
+$('#revokeBtn').addEventListener('click', async () => {
+  if (!contract || !account) {
+    showToast('Connect wallet');
+    return;
+  }
   const hash = $('#revokeHash').value.trim();
-  if(!/^0x[0-9a-fA-F]{64}$/.test(hash)){ alert('Enter 0x + 64 hex chars'); return; }
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+    alert('Enter 0x + 64 hex chars');
+    return;
+  }
   try {
-    setMini('revokeStatus','Sending revoke tx...');
+    setMini('revokeStatus', 'Sending revoke tx...');
     logLive('Revoking: ' + hash);
     const gas = await contract.methods.revokeCertificate(hash).estimateGas({ from: account });
-    const tx = await contract.methods.revokeCertificate(hash).send({ from: account, gas: Math.floor(gas * 1.2) });
+    const tx = await contract.methods.revokeCertificate(hash).send({ from: account, gas: Math.floor(gas * 1.5) });
     showToast('Revoked: ' + tx.transactionHash);
-    // update local record if exists
-    const list = getLocal(); const idx = list.findIndex(i=>i.hash===hash);
-    if(idx>-1){ list[idx].revoked = true; list[idx].revokeTx = tx.transactionHash; localStorage.setItem(LS_KEY, JSON.stringify(list)); renderIssued(); }
-    setMini('revokeStatus','Revoked: ' + tx.transactionHash);
+    const list = getLocal();
+    const idx = list.findIndex(i => i.hash === hash);
+    if (idx > -1) {
+      list[idx].revoked = true;
+      list[idx].revokeTx = tx.transactionHash;
+      localStorage.setItem(LS_KEY, JSON.stringify(list));
+      renderIssued();
+    }
+    setMini('revokeStatus', 'Revoked: ' + tx.transactionHash);
     logLive('Revoke tx: ' + tx.transactionHash);
-  } catch(e){ console.error(e); showToast('Revoke failed: ' + (e.message||e)); setMini('revokeStatus','Error'); logLive('Revoke failed: ' + (e.message||e)); }
+  } catch (e) {
+    console.error(e);
+    showToast('Revoke failed: ' + (e.message || e));
+    setMini('revokeStatus', 'Error');
+    logLive('Revoke failed: ' + (e.message || e));
+  }
 });
 
 /* =========================
    QR copy / download / share
    ========================= */
-$('#copyLinkBtn').addEventListener('click', ()=>{ const h=$('#hashInput').value.trim(); if(!h){showToast('No hash');return;} navigator.clipboard.writeText(buildVerifyURL(h)); showToast('Link copied'); });
-$('#downloadQRBtn').addEventListener('click', ()=>{ const c = $('#qrCanvas'); const a=document.createElement('a'); a.download='certificate_qr.png'; a.href=c.toDataURL('image/png'); a.click(); });
-$('#shareQRBtn').addEventListener('click', ()=>{ const c = $('#qrCanvas'); c.toBlob(async blob => { const file = new File([blob],'certificate_qr.png',{type:'image/png'}); if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:'Certificate QR'}); } else showToast('Sharing not supported'); }); });
+$('#copyLinkBtn').addEventListener('click', () => {
+  const h = $('#hashInput').value.trim();
+  if (!h) {
+    showToast('No hash');
+    return;
+  }
+  navigator.clipboard.writeText(buildVerifyURL(h));
+  showToast('Link copied');
+});
+$('#downloadQRBtn').addEventListener('click', () => {
+  const c = $('#qrCanvas');
+  const a = document.createElement('a');
+  a.download = 'certificate_qr.png';
+  a.href = c.toDataURL('image/png');
+  a.click();
+});
+$('#shareQRBtn').addEventListener('click', () => {
+  const c = $('#qrCanvas');
+  c.toBlob(async blob => {
+    const file = new File([blob], 'certificate_qr.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Certificate QR' });
+    } else {
+      showToast('Sharing not supported');
+    }
+  });
+});
 
 /* =========================
    QR scanning (html5-qrcode)
    ========================= */
 let html5QrCode = null;
-$('#startScanBtn').addEventListener('click', async ()=>{
-  if(html5QrCode) return;
+$('#startScanBtn').addEventListener('click', async () => {
+  if (html5QrCode) return;
   html5QrCode = new Html5Qrcode("reader");
   try {
     const cams = await Html5Qrcode.getCameras();
@@ -873,42 +1003,58 @@ $('#startScanBtn').addEventListener('click', async ()=>{
     await html5QrCode.start(camId, { fps: 10, qrbox: 250 }, decoded => {
       $('#verifyHash').value = decoded;
       $('#verifyBtn').click();
-      html5QrCode.stop().then(()=>{ html5QrCode = null; $('#stopScanBtn').disabled = true; }).catch(()=>{});
+      html5QrCode.stop().then(() => {
+        html5QrCode = null;
+        $('#stopScanBtn').disabled = true;
+      }).catch(() => {});
     }, err => {});
     $('#stopScanBtn').disabled = false;
     showToast('Scanner started');
-  } catch(e){ console.error(e); showToast('Camera start failed: ' + (e.message||e)); html5QrCode = null; $('#stopScanBtn').disabled = true; }
+  } catch (e) {
+    console.error(e);
+    showToast('Camera start failed: ' + (e.message || e));
+    html5QrCode = null;
+    $('#stopScanBtn').disabled = true;
+  }
 });
-$('#stopScanBtn').addEventListener('click', async ()=>{ if(!html5QrCode) return; try{ await html5QrCode.stop(); html5QrCode = null; $('#stopScanBtn').disabled = true; showToast('Scanner stopped'); } catch(e){ console.warn(e); } });
+$('#stopScanBtn').addEventListener('click', async () => {
+  if (!html5QrCode) return;
+  try {
+    await html5QrCode.stop();
+    html5QrCode = null;
+    $('#stopScanBtn').disabled = true;
+    showToast('Scanner stopped');
+  } catch (e) {
+    console.warn(e);
+  }
+});
 
 /* =========================
    Institution Single generate / issue
    ========================= */
-$('#inst_generate').addEventListener('click', ()=>{
+$('#inst_generate').addEventListener('click', () => {
   const name = $('#inst_name').value.trim();
   const course = $('#inst_course').value.trim();
   const institution = $('#inst_institution').value.trim();
-  const grade = parseInt($('#inst_grade').value,10) || 0;
+  const grade = parseInt($('#inst_grade').value, 10) || 0;
   const date = $('#inst_date').value || new Date().toISOString().split('T')[0];
-  // create pseudo-hash: for CSV without files we will generate random salt-based hashes or leave blank until admins upload actual PDFs.
-  // But better: create 0x + random 32 bytes if admin wants quick demo
   const rand = crypto.getRandomValues(new Uint8Array(32));
-  const hash = '0x' + Array.from(rand).map(b=>b.toString(16).padStart(2,'0')).join('');
-  $('#hashInput').value = hash; drawQRCode(hash);
-  setMini('instStatus','Hash generated');
-  // put in local preview area — don't auto-issue unless requested
-  showToast('Hash generated for ' + (name||'student'));
+  const hash = '0x' + Array.from(rand).map(b => b.toString(16).padStart(2, '0')).join('');
+  $('#hashInput').value = hash;
+  drawQRCode(hash);
+  setMini('instStatus', 'Hash generated');
+  showToast('Hash generated for ' + (name || 'student'));
 });
-$('#inst_issue_single').addEventListener('click', async ()=>{
-  // reuse issue flow but taking values from inst_ inputs and generated hash
+$('#inst_issue_single').addEventListener('click', async () => {
   $('#studentName').value = $('#inst_name').value;
   $('#courseName').value = $('#inst_course').value;
   $('#institutionName').value = $('#inst_institution').value;
   $('#grade').value = $('#inst_grade').value;
   $('#issueDate').value = $('#inst_date').value;
-  // ensure a hash exists in #hashInput (inst_generate should have created)
-  if(!$('#hashInput').value) { showToast('Generate hash first'); return; }
-  // click issue button programmatically
+  if (!$('#hashInput').value) {
+    showToast('Generate hash first');
+    return;
+  }
   $('#issueBtn').click();
 });
 
@@ -916,130 +1062,176 @@ $('#inst_issue_single').addEventListener('click', async ()=>{
    CSV parse & bulk actions
    ========================= */
 let csvRows = [];
-$('#csvParseBtn').addEventListener('click', async ()=>{
+$('#csvParseBtn').addEventListener('click', async () => {
   const file = $('#csvInput').files[0];
-  if(!file) return alert('Choose CSV file');
-  const text = await file.text();
-  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
-  // detect header
-  let start = 0; const headers = lines[0].split(',').map(h=>h.trim().toLowerCase());
-  const hasHeader = headers.some(h=>['name','course','institution','grade','date','file'].includes(h));
-  if(hasHeader){ start = 1; }
-  csvRows = [];
-  for(let i=start;i<lines.length;i++){
-    const cols = lines[i].split(',').map(c=>c.trim());
-    // map with fallback
-    if(hasHeader){
-      const obj = {};
-      headers.forEach((h, idx)=> obj[h]=cols[idx]||'');
-      csvRows.push({
-        name: obj.name || obj.recipient || '—',
-        course: obj.course || obj.coursetitle || '—',
-        institution: obj.institution || '—',
-        grade: parseInt(obj.grade,10) || 0,
-        date: obj.date || new Date().toISOString().split('T')[0]
-      });
-    } else {
-      // assume order: name,course,institution,grade,date
-      csvRows.push({
-        name: cols[0]||'—',
-        course: cols[1]||'—',
-        institution: cols[2]||'—',
-        grade: parseInt(cols[3],10) || 0,
-        date: cols[4] || new Date().toISOString().split('T')[0]
-      });
+  if (!file) return alert('Choose CSV file');
+  try {
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+    let start = 0;
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const hasHeader = headers.some(h => ['name', 'course', 'institution', 'grade', 'date', 'file'].includes(h));
+    if (hasHeader) start = 1;
+    csvRows = [];
+    for (let i = start; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim());
+      if (hasHeader) {
+        const obj = {};
+        headers.forEach((h, idx) => obj[h] = cols[idx] || '');
+        csvRows.push({
+          name: obj.name || obj.recipient || '—',
+          course: obj.course || obj.coursetitle || '—',
+          institution: obj.institution || '—',
+          grade: parseInt(obj.grade, 10) || 0,
+          date: obj.date || new Date().toISOString().split('T')[0]
+        });
+      } else {
+        csvRows.push({
+          name: cols[0] || '—',
+          course: cols[1] || '—',
+          institution: cols[2] || '—',
+          grade: parseInt(cols[3], 10) || 0,
+          date: cols[4] || new Date().toISOString().split('T')[0]
+        });
+      }
     }
+    $('#csvPreview').innerText = `Parsed ${csvRows.length} rows. Sample: ${csvRows[0] ? (csvRows[0].name + ' — ' + csvRows[0].course) : ''}`;
+    showToast('CSV parsed: ' + csvRows.length + ' rows');
+    logLive('CSV parsed: ' + csvRows.length);
+  } catch (e) {
+    console.error(e);
+    showToast('CSV parsing failed: ' + (e.message || e));
+    logLive('CSV parsing failed: ' + (e.message || e));
   }
-  $('#csvPreview').innerText = `Parsed ${csvRows.length} rows. Sample: ` + (csvRows[0]? (csvRows[0].name + ' — ' + csvRows[0].course) : '');
-  showToast('CSV parsed: ' + csvRows.length + ' rows');
-  logLive('CSV parsed: ' + csvRows.length);
 });
 
-$('#csvActionBtn').addEventListener('click', async ()=>{
-  if(!csvRows.length) return alert('No CSV rows parsed');
+$('#csvActionBtn').addEventListener('click', async () => {
+  if (!csvRows.length) return alert('No CSV rows parsed');
   const mode = $('#bulkMode').value;
-  if(mode === 'generate'){
-    // Generate random hashes locally and store
-    csvRows.forEach(r=>{
+  if (!contract || !account) {
+    showToast('Connect wallet first');
+    return;
+  }
+  if (mode === 'generate') {
+    csvRows.forEach(r => {
       const rand = crypto.getRandomValues(new Uint8Array(32));
-      const hash = '0x' + Array.from(rand).map(b=>b.toString(16).padStart(2,'0')).join('');
+      const hash = '0x' + Array.from(rand).map(b => b.toString(16).padStart(2, '0')).join('');
       const meta = { hash, name: r.name, course: r.course, institution: r.institution, grade: r.grade, ts: Date.now() };
       saveLocal(meta);
     });
-    renderIssued(); showToast('Generated hashes locally for ' + csvRows.length + ' rows');
+    renderIssued();
+    showToast('Generated hashes locally for ' + csvRows.length + ' rows');
     logLive('Generated hashes locally for CSV');
-    return;
-  } else if(mode === 'batch'){
-    // build arrays and call batchIssueCertificates once
-    if(!contract || !account) { showToast('Connect wallet first'); return; }
+  } else if (mode === 'batch') {
     try {
-      // build arrays
-      const hashes = []; const names=[]; const courses=[]; const grades=[]; const ipfs=[]; // ipfs empty
-      for(const r of csvRows){
+      const hashes = [];
+      const names = [];
+      const courses = [];
+      const grades = [];
+      const ipfs = [];
+      for (const r of csvRows) {
         const rand = crypto.getRandomValues(new Uint8Array(32));
-        const h = '0x' + Array.from(rand).map(b=>b.toString(16).padStart(2,'0')).join('');
+        const h = '0x' + Array.from(rand).map(b => b.toString(16).padStart(2, '0')).join('');
         hashes.push(h);
         names.push(r.name || '—');
         courses.push(r.course || '—');
-        // ensure numerical safe values (uint8) — web3 accepts Number but avoid BigInt mixing
-        let g = parseInt(r.grade,10); if(Number.isNaN(g)) g = 0; if(g<0) g=0; if(g>255) g=255;
+        let g = parseInt(r.grade, 10);
+        if (Number.isNaN(g)) g = 0;
+        if (g < 0) g = 0;
+        if (g > 255) g = 255;
         grades.push(Number(g));
         ipfs.push('');
       }
-      setMini('instStatus','Sending batch tx...');
-      logLive('Sending batchIssueCertificates for ' + hashes.length + ' certs');
-      const gas = await contract.methods.batchIssueCertificates(hashes, names, courses, grades, ipfs).estimateGas({ from: account });
-      const tx = await contract.methods.batchIssueCertificates(hashes, names, courses, grades, ipfs).send({ from: account, gas: Math.floor(gas * 1.3) });
-      showToast('Batch issued: ' + tx.transactionHash, 6000);
-      // persist locally
-      for(let i=0;i<hashes.length;i++){
-        saveLocal({ hash: hashes[i], name: names[i], course: courses[i], institution: csvRows[i].institution, grade: grades[i], ts: Date.now(), txHash: tx.transactionHash });
+      setMini('instStatus', 'Estimating gas...');
+      logLive(`Estimating gas for batch issuance of ${hashes.length} certificates`);
+      let gas;
+      try {
+        gas = await contract.methods.batchIssueCertificates(hashes, names, courses, grades, ipfs).estimateGas({ from: account });
+      } catch (e) {
+        throw new Error('Gas estimation failed: ' + (e.message || e));
       }
-      renderIssued(); setMini('instStatus','Batch tx: ' + tx.transactionHash); logLive('Batch tx: ' + tx.transactionHash);
-    } catch(e){ console.error(e); showToast('Batch failed: ' + (e.message||e)); setMini('instStatus','Error'); logLive('Batch failed: ' + (e.message||e)); }
-    return;
-  } else if(mode === 'individual'){
-    // issue one by one — careful: multiple MetaMask confirmations required
-    if(!contract || !account){ showToast('Connect wallet first'); return; }
-    for(const r of csvRows){
+      const gasLimit = Math.floor(gas * 1.5);
+      setMini('instStatus', `Sending batch tx (${hashes.length} certs)...`);
+      logLive(`Sending batchIssueCertificates for ${hashes.length} certs, gas: ${gasLimit}`);
+      const tx = await contract.methods.batchIssueCertificates(hashes, names, courses, grades, ipfs).send({ from: account, gas: gasLimit });
+      showToast(`Batch issued: ${tx.transactionHash}`, 6000);
+      for (let i = 0; i < hashes.length; i++) {
+        saveLocal({
+          hash: hashes[i],
+          name: names[i],
+          course: courses[i],
+          institution: csvRows[i].institution,
+          grade: grades[i],
+          ts: Date.now(),
+          txHash: tx.transactionHash
+        });
+      }
+      renderIssued();
+      setMini('instStatus', `Batch tx: ${tx.transactionHash}`);
+      logLive(`Batch tx successful: ${tx.transactionHash}`);
+    } catch (e) {
+      console.error(e);
+      let errorMsg = e.message || e;
+      if (errorMsg.includes('gas')) {
+        errorMsg = 'Transaction failed: insufficient gas. Try reducing the number of certificates or increasing gas limit in MetaMask.';
+      } else if (errorMsg.includes('revert')) {
+        errorMsg = 'Transaction reverted: ensure you have issuer permissions and sufficient funds.';
+      }
+      showToast(`Batch failed: ${errorMsg}`);
+      setMini('instStatus', 'Error');
+      logLive(`Batch failed: ${errorMsg}`);
+    }
+  } else if (mode === 'individual') {
+    let successCount = 0;
+    for (const r of csvRows) {
       try {
         const rand = crypto.getRandomValues(new Uint8Array(32));
-        const h = '0x' + Array.from(rand).map(b=>b.toString(16).padStart(2,'0')).join('');
-        const name = r.name||'—'; const course = r.course||'—'; let g = parseInt(r.grade,10); if(Number.isNaN(g)) g=0; if(g>255) g=255;
-        setMini('instStatus','Issuing: ' + name);
-        logLive('Issuing individual: ' + name);
+        const h = '0x' + Array.from(rand).map(b => b.toString(16).padStart(2, '0')).join('');
+        const name = r.name || '—';
+        const course = r.course || '—';
+        let g = parseInt(r.grade, 10);
+        if (Number.isNaN(g)) g = 0;
+        if (g > 255) g = 255;
+        setMini('instStatus', `Issuing: ${name}`);
+        logLive(`Issuing individual: ${name}`);
         const gas = await contract.methods.issueCertificate(h, name, course, Number(g), "").estimateGas({ from: account });
-        const tx = await contract.methods.issueCertificate(h, name, course, Number(g), "").send({ from: account, gas: Math.floor(gas * 1.2) });
+        const tx = await contract.methods.issueCertificate(h, name, course, Number(g), "").send({ from: account, gas: Math.floor(gas * 1.5) });
         saveLocal({ hash: h, name, course, institution: r.institution, grade: g, ts: Date.now(), txHash: tx.transactionHash });
         renderIssued();
-        showToast('Issued: ' + name + ' (' + tx.transactionHash + ')', 4000);
-        logLive('Issued individual tx: ' + tx.transactionHash);
-      } catch(e){ console.error(e); showToast('Issue failed for ' + r.name + ': ' + (e.message||e)); logLive('Issue failed for ' + r.name + ': ' + (e.message||e)); }
+        showToast(`Issued: ${name} (${tx.transactionHash})`, 4000);
+        logLive(`Issued individual tx: ${tx.transactionHash}`);
+        successCount++;
+      } catch (e) {
+        console.error(e);
+        let errorMsg = e.message || e;
+        if (errorMsg.includes('gas')) {
+          errorMsg = 'Insufficient gas for ' + r.name;
+        } else if (errorMsg.includes('revert')) {
+          errorMsg = 'Transaction reverted for ' + r.name + ': check issuer permissions';
+        }
+        showToast(`Issue failed for ${r.name}: ${errorMsg}`);
+        logLive(`Issue failed for ${r.name}: ${errorMsg}`);
+      }
     }
-    setMini('instStatus','Done');
-    return;
+    setMini('instStatus', `Completed: ${successCount}/${csvRows.length} issued`);
+    logLive(`Individual issuance completed: ${successCount}/${csvRows.length}`);
   }
 });
-
-/* =========================
-   CSV helpers end
-   ========================= */
 
 /* =========================
    Deep-link auto verify
    ========================= */
-(function autoVerifyFromURL(){
+(function autoVerifyFromURL() {
   const p = new URLSearchParams(location.search);
   const h = p.get('certHash');
-  if(h){
-    // switch to verify tab
-    $$('.tab').forEach(t=>t.classList.remove('active'));
+  if (h) {
+    $$('.tab').forEach(t => t.classList.remove('active'));
     document.querySelector('.tab[data-tab="verify"]').classList.add('active');
-    $$('.panel').forEach(p=>p.style.display='none');
-    document.getElementById('panel-verify').style.display='block';
+    $$('.panel').forEach(p => p.style.display = 'none');
+    document.getElementById('panel-verify').style.display = 'block';
     $('#verifyHash').value = h;
     drawQRCode(h);
-    setTimeout(()=> $('#verifyBtn').click(), 700);
+    setTimeout(() => $('#verifyBtn').click(), 700);
   }
 })();
 
@@ -1049,7 +1241,6 @@ $('#csvActionBtn').addEventListener('click', async ()=>{
 renderIssued();
 drawQRCode('Certificate Registry DApp');
 logLive('App initialized');
-
 </script>
 </body>
 </html>
